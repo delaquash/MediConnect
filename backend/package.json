@@ -3,7 +3,17 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon --exec ts-node server.ts",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "dev": "nodemon --exec ts-node server.ts",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:debug": "jest --runInBand --detectOpenHandles --forceExit",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration"
   },
   "keywords": [],
   "author": "",
