@@ -1,3 +1,4 @@
+import { timeStamp } from "console";
 import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface IDoctor extends Document {
@@ -5,7 +6,7 @@ export interface IDoctor extends Document {
   email: string;
   password: string;
   image: string;
-  speciality: string;
+  specialty: string;
   degree: string;
   experience: string;
   about: string;
@@ -26,7 +27,7 @@ const doctorSchema = new Schema<IDoctor>(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     image: { type: String, required: true },
-    speciality: { type: String, required: true },
+    specialty: { type: String, required: true },
     degree: { type: String, required: true },
     experience: { type: String, required: true },
     about: { type: String, required: true },
@@ -36,7 +37,11 @@ const doctorSchema = new Schema<IDoctor>(
     date: { type: Number, required: true },
     slots_booked: { type: Object, default: {} },
   },
-  { minimize: false }
+  { minimize: false, // Prevents mongoose from removing empty objects
+    timestamps: true   // Automatically adds createdAt and updatedAt fields
+  }, 
+  
+
 );
 
 const DoctorModel: Model<IDoctor> =
