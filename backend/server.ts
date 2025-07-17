@@ -1,13 +1,13 @@
 import "dotenv/config";
 import express, {Request, Response } from 'express';
-import { cors } from "cors";
+import cors  from "cors";
 import connectDB from "./config/database";
 import connectCloudinary from "./config/cloudinary";
 
 
 // app config
 const app = express();
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 5000;
 connectDB();
 connectCloudinary();
 
@@ -20,7 +20,7 @@ app.use(cors());
 // app.use("/api/doctor", doctorRouter);
 // app.use("/api/user", userRouter);
 
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
   res.send("API WORKING");
 });
 
