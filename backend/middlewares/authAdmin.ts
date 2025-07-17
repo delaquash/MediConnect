@@ -1,53 +1,53 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-
-// Extend Request to optionally include expected decoded string format
-interface AdminTokenPayload {
-  // You can also define this as { id: string } if using object payloads instead
-  [key: string]: any;
-}
+import { Request, Response, NextFunction } from "express"; // Importing types from Express
+import jwt from "jsonwebtoken"; // Import JWT library for verifying token
 
 // Admin authentication middleware
-const authAdmin = async (req: Request, res: Response, next: NextFunction) => {
+const authAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Destructure the token from request headers
+    // Extract the custom token "atoken" from request headers
     const { atoken } = req.headers as { atoken?: string };
 
-    // If token is missing, deny access
+    // If the token is not present, return unauthorized response
     if (!atoken) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: "Not Authorized. Login Again",
       });
+      return; // Exit early
     }
 
-    // Ensure environment variables are defined
+    // Load admin credentials and secret key from environment variables
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
     const jwtSecret = process.env.JWT_SECRET;
 
+    // If any of the required env variables are missing, throw an error
     if (!adminEmail || !adminPassword || !jwtSecret) {
       throw new Error("Admin credentials or JWT secret not configured");
     }
 
-    // Decode the JWT
+    // Verify the JWT using the secret; decode the payload
     const token_decode = jwt.verify(atoken, jwtSecret) as string;
 
-    // Validate the token matches expected value (email + password)
+    // Expected token payload is a combination of admin email and password
     const expected = adminEmail + adminPassword;
+
+    // If the decoded token payload doesn't match expected value, deny access
     if (token_decode !== expected) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: "Not Authorized. Login Again",
       });
+      return; // Exit early
     }
 
-    // All checks passed — continue to next middleware
+    // All checks passed, allow request to proceed
     next();
   } catch (error: any) {
+    // Handle and log any errors
     console.error("Admin Auth Error:", error.message);
     res.status(401).json({ success: false, message: error.message });
   }
 };
 
-export default authAdmin;
+export default authAdmin; // Export middleware for use in routes
