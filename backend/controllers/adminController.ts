@@ -2,9 +2,11 @@ import express, { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
 import validator from 'validator';
 
+
 export const addDoctor = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { name, email, password, specialty, degree, experience, about, available, fees, address } = req.body;
+        const imageFile = req.file
         if(!name || !email || !password || !specialty || !degree || !experience || !about || !fees || !address) {
             return res.status(400).json({ message: "All fields are required" });
         }
@@ -33,6 +35,7 @@ export const addDoctor = async (req: Request, res: Response, next: NextFunction)
             specialty,
             degree,
             experience,
+            image: imageFile,
             about,
             available,
             fees,

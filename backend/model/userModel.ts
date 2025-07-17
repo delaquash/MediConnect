@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+
 interface IUser {
     name: string;
     email: string;
@@ -15,8 +17,12 @@ interface IUser {
 
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  name: { 
+    type: String, 
+    required: true 
+  },
+  email: { 
+    type: String, required: true, unique: true },
   password: { type: String, required: true },
   image: {
     type: String,
@@ -28,6 +34,21 @@ const userSchema = new mongoose.Schema({
   dob: { type: String, default: "Not Selected" },
   phone: { type: String, default: "000000000" },
 });
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next(); // skip if password isn't modified
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt); // hash the password
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+// to compare password
+
 
 const UserModel = mongoose.model<IUser>("User", userSchema);
 export default UserModel;
