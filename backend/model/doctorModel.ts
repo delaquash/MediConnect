@@ -1,5 +1,4 @@
 import bcrypt from "bcryptjs";
-import { timeStamp } from "console";
 import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface IDoctor extends Document {

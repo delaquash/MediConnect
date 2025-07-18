@@ -1,14 +1,14 @@
-import express, { NextFunction, Request, Response } from 'express';
-import DoctorModel from '../model/doctorModel';
+import { NextFunction, Request, Response } from 'express';
+import DoctorModel, { IDoctor } from '../model/doctorModel';
 import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
 
 const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { name, email, password, specialty, degree, experience, about, available, fees, address } = req.body;
+        const { name, email, password, image, specialty, degree, experience, about, available, fees, address, slots_booked } = req.body as IDoctor;
         
-        if(!name || !email || !password || !specialty || !degree || !experience || !about || !fees || !address) {
+        if(!name || !email || !password || !image || !specialty || !degree || !experience || !about || !fees || !address || !slots_booked) {
             res.status(400).json({ message: "All fields are required" })
             return; 
         }
@@ -29,22 +29,23 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
             });
             return; // 
         }
-
+        let uploadedImage: string ;
         // ✅ Add file validation
-        if (!req.file) {
-            res.status(400).json({ message: "Doctor image is required" });
+         if (req.file) {
+            // File upload - upload to Cloudinary
+            const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+            const result = await cloudinary.uploader.upload(fileStr, {
+                folder: 'uploads',
+                resource_type: 'auto',
+            });
+            uploadedImage = result.secure_url;
+        } else if (image) {
+            // Image URL provided
+            uploadedImage = image;
+        } else {
+            res.status(400).json({ message: "Doctor image is required (either upload file or provide image URL)" });
             return;
         }
-
-        const fileStr = `data:${req.file?.mimetype};base64,${req.file?.buffer.toString('base64')}`;
-
-        // Upload to Cloudinary
-        const result = await cloudinary.uploader.upload(fileStr, {
-            folder: 'uploads',
-            resource_type: 'auto',
-        });
-
-        const uploadedImage = result.secure_url
 
         const doctor = new DoctorModel({
             name,
@@ -57,6 +58,7 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
             about,
             available,
             fees,
+            slots_booked,
             address,
             date: Date.now(),
         });
@@ -69,8 +71,6 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
         });
     } catch (error: any) {
         next(error);
-         res.json({ success: false, message: error.message });
-
     } 
 }
 
