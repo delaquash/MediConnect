@@ -2,7 +2,7 @@ import express from "express";
 import {
   addDoctor,
   // allDoctors,
-  // loginAdmin,
+  loginAdmin,
   // appointmentsAdmin,
   // appointmentCancel,
   // adminDashboard,
@@ -13,8 +13,10 @@ import authAdmin from "../middlewares/authAdmin";
 
 const adminRouter = express.Router();
 
-adminRouter.post("/add-doctor", authAdmin, upload.single("image"), addDoctor);
-// adminRouter.post("/login", loginAdmin);
+adminRouter.post("/add-doctor",
+  //  authAdmin, 
+   upload.single("image"), addDoctor);
+adminRouter.post("/login", loginAdmin);
 // adminRouter.post("/all-doctors", authAdmin, allDoctors);
 // // adminRouter.post("/change-availability", authAdmin, changeAvailability);
 // adminRouter.get("/appointments", authAdmin, appointmentsAdmin);

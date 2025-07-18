@@ -6,7 +6,7 @@ export interface IDoctor extends Document {
   name: string;
   email: string;
   password: string;
-  image: string;
+  image?: string;
   specialty: string;
   degree: string;
   experience: string;
@@ -16,7 +16,7 @@ export interface IDoctor extends Document {
   address: {
     [key: string]: any;
   };
-  date: number;
+  date: Date;
   slots_booked: {
     [key: string]: any;
   };
@@ -27,7 +27,7 @@ const doctorSchema = new Schema<IDoctor>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    image: { type: String, required: true },
+    image: { type: String  },
     specialty: { type: String, required: true },
     degree: { type: String, required: true },
     experience: { type: String, required: true },
@@ -35,7 +35,8 @@ const doctorSchema = new Schema<IDoctor>(
     available: { type: Boolean, default: true },
     fees: { type: Number, required: true },
     address: { type: Object, required: true },
-    date: { type: Number, required: true },
+    date: {type: Date, default: Date.now },
+    // slots_booked will hold the booked slots for each day
     slots_booked: { type: Object, default: {} },
   },
   { minimize: false, // Prevents mongoose from removing empty objects

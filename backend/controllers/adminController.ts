@@ -1,9 +1,10 @@
 import express, { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
 import validator from 'validator';
+import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
 
-export const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { name, email, password, specialty, degree, experience, about, available, fees, address } = req.body;
         
@@ -15,7 +16,7 @@ export const addDoctor = async (req: Request, res: Response, next: NextFunction)
         if (!validator.isEmail(email)) {
             res.status(400).json({ message: "Invalid email format" })
             return; 
-
+        }
         if (!validator.isStrongPassword(password, {
             minLength: 8,
             minLowercase: 1,
@@ -35,7 +36,7 @@ export const addDoctor = async (req: Request, res: Response, next: NextFunction)
             return;
         }
 
-        const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        const fileStr = `data:${req.file?.mimetype};base64,${req.file?.buffer.toString('base64')}`;
 
         // Upload to Cloudinary
         const result = await cloudinary.uploader.upload(fileStr, {
@@ -66,13 +67,75 @@ export const addDoctor = async (req: Request, res: Response, next: NextFunction)
             message: "Doctor added successfully", 
             data: SavedDoctor,
         });
+    } catch (error: any) {
+        next(error);
+         res.json({ success: false, message: error.message });
+
+    } 
+}
+
+// export const allDoctors = async (req: Request, res: Response, next: NextFunction) => {}
+const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { email, password } = req.body;
+
+        // Validate credentials
+        if(process.env.ADMIN_EMAIL !== email || process.env.ADMIN_PASSWORD !== password) {
+            res.status(401).json({ success: false, message: "Invalid email or password" });
+            return;
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                email: process.env.ADMIN_EMAIL, 
+                role: 'admin',
+                id: 'admin' 
+            },
+            process.env.JWT_SECRET!,
+            { expiresIn: "30d" }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            token,
+        });
+    } catch (error) {
+        next(error);
+    } 
+}
+
+const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const doctors = await DoctorModel.find({}).select("-password").sort({ date: -1 });
+        
+        // ✅ Return empty array with 200 status instead of 404
+        res.status(200).json({
+            success: true,
+            message: doctors.length === 0 ? "No doctors found" : "Doctors retrieved successfully",
+            data: doctors,
+            count: doctors.length, // ✅ Optional: include count
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        
     } catch (error) {
         next(error);
         
     }
 }
-export const allDoctors = async (req: Request, res: Response, next: NextFunction) => {}
-export const loginAdmin = async (req: Request, res: Response, next: NextFunction) => {}
-export const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction) => {}
-export const appointmentCancel = async (req: Request, res: Response, next: NextFunction) => {}
-export const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {}
+const appointmentCancel = async (req: Request, res: Response, next: NextFunction) => {}
+const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {}
+
+export  {
+    addDoctor,
+    loginAdmin,
+    // appointmentsAdmin,
+    // appointmentCancel,
+    // adminDashboard,
+}
