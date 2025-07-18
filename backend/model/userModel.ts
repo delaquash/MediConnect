@@ -16,7 +16,7 @@ interface IUser {
 }
 
 
-const userSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema({
   name: { 
     type: String, 
     required: true 
@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, default: "000000000" },
 });
 
-userSchema.pre("save", async function (next) {
+UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next(); // skip if password isn't modified
 
   try {
@@ -48,7 +48,10 @@ userSchema.pre("save", async function (next) {
 });
 
 // to compare password
+// Compare the password
+UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean>{
+  return await bcrypt.compare(candidatePassword, this.password);
+  }
 
-
-const UserModel = mongoose.model<IUser>("User", userSchema);
+const UserModel = mongoose.model<IUser>("User", UserSchema);
 export default UserModel;

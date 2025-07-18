@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { timeStamp } from "console";
 import mongoose, { Document, Schema, Model } from "mongoose";
 
@@ -40,9 +41,26 @@ const doctorSchema = new Schema<IDoctor>(
   { minimize: false, // Prevents mongoose from removing empty objects
     timestamps: true   // Automatically adds createdAt and updatedAt fields
   }, 
-  
-
 );
+
+doctorSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next(); // skip if password isn't modified
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt); // hash the password
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+// to compare password
+// Compare the password
+doctorSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean>{
+  return await bcrypt.compare(candidatePassword, this.password);
+  }
+
 
 const DoctorModel: Model<IDoctor> =
   mongoose.models.doctor || mongoose.model<IDoctor>("doctor", doctorSchema);
