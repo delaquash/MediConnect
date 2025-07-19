@@ -74,7 +74,18 @@ const doctorList = async (req: Request, res: Response, next: NextFunction): Prom
 }
 const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+        // ✅ Add safety check for req.body
+        if (!req.body) {
+            console.log(req.body); // Debug log
+            res.status(400).json({
+                success: false,
+                message: "Request body is required"
+            });
+            return;
+        }
+        // Validate that email and password are provided
         const { email, password } = req.body
+
         if (!email || !password) {
             res.status(400).json({ success: false, message: "Email and password are required" });
             return;
