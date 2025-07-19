@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 // ✅ API endpoints
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/doctor", doctorRouter);
-app.use("/api/v1/user", userRouter); // Fix typo when you add this
+app.use("/api/v1/user", userRouter); 
 
 app.get("/", (req: Request, res: Response) => {
   res.send("API WORKING");

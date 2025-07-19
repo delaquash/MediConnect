@@ -32,6 +32,18 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
                 });
                 return; // 
             }
+
+              // Check if user already exists
+                const existingUser = await UserModel.findOne({ email });
+                if (existingUser) {
+                    res.status(409).json({
+                        success: false,
+                        message: "User already exists with this email"
+                    });
+                    return;
+                }
+
+
             let uploadedImage: string ;
             // ✅ Add file validation
              if (req.file) {
