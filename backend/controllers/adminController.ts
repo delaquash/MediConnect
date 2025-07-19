@@ -107,20 +107,26 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
 }
 
 const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+
+    console.log("🔍 allDoctors route hit!"); // Add this line
+    
     try {
         const doctors = await DoctorModel.find({}).select("-password").sort({ date: -1 });
         
-        // ✅ Return empty array with 200 status instead of 404
+        console.log("📊 Found doctors:", doctors.length); // Add this too
+        
         res.status(200).json({
             success: true,
             message: doctors.length === 0 ? "No doctors found" : "Doctors retrieved successfully",
             data: doctors,
-            count: doctors.length, // ✅ Optional: include count
+            count: doctors.length,
         });
     } catch (error) {
+        console.error("❌ Database error:", error); // Add this
         next(error);
     }
 }
+
 const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         
@@ -135,6 +141,7 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
 export  {
     addDoctor,
     loginAdmin,
+    allDoctors,
     // appointmentsAdmin,
     // appointmentCancel,
     // adminDashboard,
