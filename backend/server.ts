@@ -7,12 +7,14 @@ import adminRouter from "./routes/adminRouter";
 
 // app config
 const app = express();
+app.use(express.json()); // Parse JSON bodies
+
 const port = process.env.PORT || 5000;
 connectDB();
 connectCloudinary();
 
 // middlewares
-app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use(cors());
 
 // api endpoints

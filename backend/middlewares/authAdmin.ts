@@ -24,12 +24,10 @@ import jwt from "jsonwebtoken"; // Import JWT library for verifying token
 
         // Decode the JWT token (it's now an object)
         const decoded = jwt.verify(atoken, jwtSecret) as any;
-        
-        console.log("Decoded token:", decoded); // Debug log
 
         // Check if the decoded token has the expected structure and email
         if (!decoded.email || decoded.email !== adminEmail || decoded.role !== 'admin') {
-            console.log("Token validation failed"); // Debug log
+
             res.status(401).json({
                 success: false,
                 message: "Not Authorized. Login Again",
