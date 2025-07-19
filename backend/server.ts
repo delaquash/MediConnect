@@ -4,7 +4,7 @@ import cors  from "cors";
 import connectDB from "./config/database";
 import connectCloudinary from "./config/cloudinary";
 import adminRouter from "./routes/adminRouter";
-
+import doctorRouter from "./routes/doctorRoutes";
 // app config
 const app = express();
 app.use(express.json()); // Parse JSON bodies
@@ -19,7 +19,7 @@ app.use(cors());
 
 // api endpoints
 app.use("/api/v1/admin", adminRouter);
-// app.use("/api/doctor", doctorRouter);
+app.use("/api/v1/doctor", doctorRouter);
 // app.use("/api/ser", userRouter);
 
 app.get("/", (req: Request, res: Response) => {

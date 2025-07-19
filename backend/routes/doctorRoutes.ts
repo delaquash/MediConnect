@@ -3,6 +3,15 @@ import { loginDoctor, appointmentCancelDoctor, appointmentsDoctor, changeAvailab
 import docAuth from "../middlewares/docAuth";
 
 
-const docRouter = express.Router();
+const doctorRouter = express.Router();
 
-docRouter.post("/")
+doctorRouter.get("/list", doctorList);
+doctorRouter.post("/login", loginDoctor);
+// doctorRouter.get("/appointments", docAuth, appointmentsDoctor);
+// doctorRouter.post("/complete-appointment", docAuth, appointmentsDoctor);
+// doctorRouter.post("/cancel-appointment", docAuth, appointmentCancelDoctor);
+// doctorRouter.get("/dashboard", docAuth, doctorsDashboard);
+// doctorRouter.get("/profile", docAuth, doctorsProfile);
+// doctorRouter.post("/update-profile", docAuth, updateDoctorProfile);
+
+export default doctorRouter; // Export the router for use in server setup   

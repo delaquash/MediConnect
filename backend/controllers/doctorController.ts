@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
+import jwt from 'jsonwebtoken';
+
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -73,9 +75,28 @@ const doctorList = async (req: Request, res: Response, next: NextFunction): Prom
 const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { email, password } = req.body
+        if (!email || !password) {
+            res.status(400).json({ success: false, message: "Email and password are required" });
+            return;
+        }
         const doctor = await DoctorModel.findOne({ email })
+
+           if (!doctor) {
+                 res.json({ success: false, message: "Invalid credentials" });
+                 return;
+           }
+
+            const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET!, {
+                expiresIn: "30d" })
+    
+
+           res.status(200).json({
+                success: true,
+                message: "Login successful",
+               token
+            });
     } catch (error) {
-        
+        next(error);
     }
 }
 const appointmentsDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
