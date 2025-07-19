@@ -72,10 +72,22 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
     });
 
     const newRegisteredUser = await user.save();
+
+       const userResponse = {
+        _id: newRegisteredUser._id,
+        name: newRegisteredUser.name,
+        email: newRegisteredUser.email,
+        image: newRegisteredUser.image,
+        address: newRegisteredUser.address,
+        gender: newRegisteredUser.gender,
+        dob: newRegisteredUser.dob,
+        phone: newRegisteredUser.phone
+    };
+
     res.status(201).json({
         success: true,
         message: "User registered successfully",
-        newRegisteredUser
+        userResponse
     });
    } catch (error) {
         next(error);
