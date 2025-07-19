@@ -58,8 +58,26 @@ const changeAvailability = async (req: Request, res: Response, next: NextFunctio
         next(error);
     }
 }
-const doctorList = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
-const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const doctorList = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const doctors = await DoctorModel.find({}).select(["-password", "-email"]).sort({ date: -1 });
+        res.status(200).json({
+            success: true,
+            message: "Doctors retrieved successfully",
+            data: doctors
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { email, password } = req.body
+        const doctor = await DoctorModel.findOne({ email })
+    } catch (error) {
+        
+    }
+}
 const appointmentsDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const appointmentCancelDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const doctorsDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
