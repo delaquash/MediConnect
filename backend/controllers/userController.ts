@@ -95,12 +95,53 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
     
 }
         
-const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { email, password } = req.body;
+          if (!email || !password) {
+            res.status(400).json({ success: false, message: "Email and password are required" });
+            return;
+        }
+
+        const user = await UserModel.findOne({ email })
+
+        if(!user) {
+             res.json({ success: false, message: "Invalid credentials" });
+                 return;
+        }
+
+        const token = jwt.sign({ id: user._id}, process.env.JWT_SECRET!, {
+            expiresIn: "30d"
+        })
+
+        res.status(200).json({
+            success: true,
+            message:"User login successfully",
+            token
+,        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+const getProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { userId } = req.body;
+        const userProfile = await UserModel.findById({ userId }).select("-password")
+        res.status(201).json({
+            success: true,
+            message: "User profile successfully retrieved..",
+            userProfile
+        })
+    } catch (error) {
+        next(error)
+    }
+}
 
 export {
     registerUser,
     loginUser,
-    // getProfile,
+    getProfile,
     // updateProfile,
     // bookAppointment,
     // listAppointment,
