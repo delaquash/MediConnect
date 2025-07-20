@@ -4,6 +4,13 @@ import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
 
+// Assuming your authUser middleware adds user info to req
+// Define custom interface extending Request
+interface AuthenticatedRequest extends Request {
+  userId?: string;
+}
+
+
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
    try {
      const {name, email, password, image, address, gender, dob, phone  } = req.body
@@ -124,19 +131,39 @@ const loginUser = async (req: Request, res: Response, next: NextFunction): Promi
     }
 }
 
-const getProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const { userId } = req.body;
-        const userProfile = await UserModel.findById({ userId }).select("-password")
-        res.status(201).json({
-            success: true,
-            message: "User profile successfully retrieved..",
-            userProfile
-        })
-    } catch (error) {
-        next(error)
+const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.userId;
+    
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated"
+      });
+      return;
     }
-}
+    
+    const userProfile = await UserModel.findById(userId).select("-password");
+    
+    if (!userProfile) {
+      res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+      return;
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: "User profile successfully retrieved",
+      userProfile
+    });
+    
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 export {
     registerUser,

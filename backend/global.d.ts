@@ -46,5 +46,11 @@ export interface FileUploadResult {
     error?: string;
 }
 
+// Define custom interface extending Request
+interface AuthenticatedRequest extends Request {
+  userId?: string;
+}
+
+
 // Export to make this a module (required for global declarations)
 export {};
