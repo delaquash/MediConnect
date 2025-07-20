@@ -166,21 +166,125 @@ const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFu
 
 const updateProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { userId, name, password, address, dob, phone } = req.body;
-        const imageFile = req.file;
-        if (!userId) {
-            res.status(400).json({ success: false, message: "User ID is required" });
-            return;
-        }
-        if (!name || !address || !dob || !phone) {
-            res.status(400).json({ success: false, message: "Please fill all fields" });
-            return;
-        }
-    } catch (error) {
-        next(error);
+        // Get user ID from authenticated request (set by authUser middleware)
+        const userId = req.userId;
         
+        // Extract fields from request body
+        const { name, password, address, dob, phone } = req.body;
+        const imageFile = req.file;
+        
+        // Validate user authentication
+        if (!userId) {
+            res.status(401).json({ 
+                success: false, 
+                message: "User not authenticated" 
+            });
+            return;
+        }
+        
+        // Validate required fields (excluding password as it's optional for updates)
+        if (!name || !address || !dob || !phone) {
+            res.status(400).json({ 
+                success: false, 
+                message: "Please fill all required fields (name, address, dob, phone)" 
+            });
+            return;
+        }
+        
+        // Check if user exists
+        const existingUser = await UserModel.findById(userId);
+        if (!existingUser) {
+            res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+            return;
+        }
+        
+        // Prepare update object with basic fields
+        const updateData: any = {
+            name,
+            address,
+            dob,
+            phone
+        };
+        
+        // Handle password update if provided
+        if (password) {
+            // Validate password strength
+            if (!validator.isStrongPassword(password, {
+                minLength: 8,
+                minLowercase: 1,
+                minUppercase: 1,
+                minNumbers: 1,
+                minSymbols: 1,
+            })) {
+                res.status(400).json({
+                    success: false,
+                    message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
+                });
+                return;
+            }
+            // Password will be automatically hashed by pre-save middleware
+            updateData.password = password;
+        }
+        
+        // Handle image upload if provided
+        if (imageFile) {
+            try {
+                // Create base64 string from file buffer
+                const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+                
+                // Upload to Cloudinary
+                const result = await cloudinary.uploader.upload(fileStr, {
+                    folder: 'uploads',
+                    resource_type: 'auto',
+                });
+                
+                // Add image URL to update data
+                updateData.image = result.secure_url;
+            } catch (uploadError) {
+                console.error("Image upload error:", uploadError);
+                res.status(500).json({
+                    success: false,
+                    message: "Failed to upload image"
+                });
+                return;
+            }
+        }
+        
+        // Update user profile in a single operation
+        const updatedUser = await UserModel.findByIdAndUpdate(
+            userId, 
+            updateData,
+            { 
+                new: true, // Return updated document
+                runValidators: true // Run schema validators
+            }
+        ).select("-password"); // Exclude password from response
+        
+        // Check if update was successful
+        if (!updatedUser) {
+            res.status(500).json({
+                success: false,
+                message: "Failed to update profile"
+            });
+            return;
+        }
+        
+        // Send success response
+        res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+        
+    } catch (error) {
+        console.error("Update profile error:", error);
+        next(error);
     }
-}
+};
+
 
 export {
     registerUser,
