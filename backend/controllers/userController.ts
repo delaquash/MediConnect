@@ -164,12 +164,29 @@ const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFu
   }
 };
 
+const updateProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { userId, name, password, address, dob, phone } = req.body;
+        const imageFile = req.file;
+        if (!userId) {
+            res.status(400).json({ success: false, message: "User ID is required" });
+            return;
+        }
+        if (!name || !address || !dob || !phone) {
+            res.status(400).json({ success: false, message: "Please fill all fields" });
+            return;
+        }
+    } catch (error) {
+        next(error);
+        
+    }
+}
 
 export {
     registerUser,
     loginUser,
     getProfile,
-    // updateProfile,
+    updateProfile,
     // bookAppointment,
     // listAppointment,
     // cancelAppointment,
