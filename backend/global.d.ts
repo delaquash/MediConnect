@@ -48,7 +48,7 @@ export interface FileUploadResult {
 }
 
 // Define custom interface extending Request
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 

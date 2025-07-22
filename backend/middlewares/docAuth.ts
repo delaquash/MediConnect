@@ -15,10 +15,11 @@ const authDoctor = async (req: Request, res: Response, next: NextFunction) => {
 
     // If no token is provided
     if (!dtoken) {
-      return res.status(401).json({
+       res.status(401).json({
         success: false,
         message: "Not Authorized. Login Again",
       });
+      return;
     }
 
     // Ensure JWT_SECRET is defined
@@ -35,10 +36,11 @@ const authDoctor = async (req: Request, res: Response, next: NextFunction) => {
       req.body.docId = (decoded as JwtPayload).id;
       next();
     } else {
-      return res.status(401).json({
+     res.status(401).json({
         success: false,
         message: "Invalid token structure",
       });
+       return 
     }
   } catch (error: any) {
     console.error("AuthDoctor Error:", error.message);

@@ -4,7 +4,7 @@ import {
   loginUser,
   getProfile,
   updateProfile,
-//   bookAppointment,
+  bookAppointment,
 //   listAppointment,
 //   cancelAppointment,
 } from "../controllers/userController";
@@ -23,8 +23,8 @@ userRouter.post(
   authUser,
   updateProfile
 );
-// userRouter.post("/book-appointment", authUser, bookAppointment);
+userRouter.post("/book-appointment", authUser, bookAppointment);
 // userRouter.get("/appointments", authUser, listAppointment);
-// userRouter.post("/cancel-appointment", authUser, cancelAppointment);
+userRouter.post("/cancel-appointment", authUser, cancelAppointment);
 
 export default userRouter;
