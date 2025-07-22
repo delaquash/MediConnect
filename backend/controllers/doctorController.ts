@@ -114,6 +114,7 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
         next(error);
     }
 }
+
 const appointmentsDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       // Start MongoDB session for transaction support (ensures data consistency)
   const session = await mongoose.startSession();
@@ -277,7 +278,20 @@ const appointmentsDoctor = async (req: Request, res: Response, next: NextFunctio
         { slots_booked: updatedBookedSlots }, // Update slots_booked field
         { session }                          // Include in transaction
       );
-      
+       // Send successful response with appointment details
+      res.status(201).json({                 // 201 Created status for successful creation
+        success: true,
+        message: "Appointment booked successfully",
+        appointment: {                       // Return appointment summary
+          appointmentId: newAppointment._id, // MongoDB-generated appointment ID
+          doctorName: doctor.name,           // Doctor's name for confirmation
+          speciality: doctor.specialty,     // Doctor's specialty for confirmation
+          slotDate,                          // Booked date for confirmation
+          slotTime,                          // Booked time for confirmation
+          fees: doctor.fees,                 // Amount to be paid
+          status: "confirmed"                // Appointment status
+        }
+      });
     }) 
   } catch (error) {
     // Log error details for debugging purposes
