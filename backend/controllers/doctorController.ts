@@ -198,10 +198,35 @@ const appointmentsDoctor = async (req: Request, res: Response, next: NextFunctio
         return;                              // Cannot book with unavailable doctor
       }
       
+    }) 
   } catch (error) {
+    // Log error details for debugging purposes
+    console.error("Book appointment error:", error);
     
+    // Handle specific MongoDB validation errors
+    if (error.name === 'ValidationError') {
+      res.status(400).json({                 // 400 Bad Request for validation issues
+        success: false,
+        message: "Validation error: Please check your input data"
+      });
+      return;
+    }
+    
+    // Handle MongoDB ObjectId casting errors
+    if (error.name === 'CastError') {
+      res.status(400).json({                 // 400 Bad Request for casting issues
+        success: false,
+        message: "Invalid ID format"
+      });
+      return;
+    }
+    
+    // Pass unhandled errors to Express error middleware
+    next(error);
+  } finally {
+    // Always end the MongoDB session to prevent memory leaks
+    await session.endSession();
   }
-  
 }
 const appointmentCancelDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const doctorsDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
