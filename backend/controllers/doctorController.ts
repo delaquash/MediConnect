@@ -213,14 +213,54 @@ const appointmentsDoctor = async (req: Request, res: Response, next: NextFunctio
       }
     
       // Check for existing appointment with same parameters (prevent duplicate bookings)
+     // Check for existing appointment with same parameters (prevent duplicate bookings)
       const existingAppointment = await AppointmentModel.findOne({
-        userId,
-        docId,
-        slotDate,
-        slotTime,
-        cancelled: false
-      }).session(session);
+        userId,                              // Same user
+        docId,                               // Same doctor
+        slotDate,                            // Same date
+        slotTime,                            // Same time
+        cancelled: false                     // Only check non-cancelled appointments
+      }).session(session);                   // Include in transaction
+      
+      // If duplicate appointment found, reject the request
+      if (existingAppointment) {
+        res.status(409).json({               // 409 Conflict for duplicate appointment
+          success: false,
+          message: "You already have an appointment with this doctor at this time"
+        });
+        return;                              // Prevent duplicate bookings
+      }
+      // Prepare appointment data object with all required information
 
+      const appointmentData = {
+        userId,                              // User ID from authenticated request
+        docId,                               // Doctor ID from request body
+        slotDate,                            // Date of the appointment
+        slotTime,                            // Time of the appointment
+        userData: {                           // User data to be stored in appointment
+          name: user.name,                    // User's name
+          email: user.email,                   // User's email
+          phone: user.phone,                   // User's phone number
+          address: user.address                // User's address
+        },
+        docData: {                            // Doctor data to be stored in appointment
+          name: doctor.name,           // Doctor's name
+          specialty: doctor.specialty,              // Doctor's specialty
+          degree: doctor.degree,                  // Doctor's degree    
+          fees: doctor.fees                     // Doctor's consultation fees
+        },
+        amount: doctor.fees,                  // Appointment fee based on doctor's fees
+        date: Date.now(),                     // Current timestamp for appointment creation
+        cancelled: false,                     // Initially not cancelled
+        payment: false,                       // Initially not paid
+        isCompleted: false                    // Initially not completed
+      }
+
+
+      // Create new appointment document with prepared data
+      const newAppointment = new AppointmentModel(appointmentData);
+      // Save appointment to database within transaction
+      await newAppointment.save({ session });
     }) 
   } catch (error) {
     // Log error details for debugging purposes
