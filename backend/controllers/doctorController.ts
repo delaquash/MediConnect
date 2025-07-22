@@ -261,6 +261,23 @@ const appointmentsDoctor = async (req: Request, res: Response, next: NextFunctio
       const newAppointment = new AppointmentModel(appointmentData);
       // Save appointment to database within transaction
       await newAppointment.save({ session });
+
+      // Create copy of doctor's existing booked slots to avoid mutation
+      const updatedBookedSlots = { ...doctorSlotsBooked };
+      // If no slots exist for this date, initialize empty array
+      if (!updatedBookedSlots[slotDate]) {
+        updatedBookedSlots[slotDate] = [];
+      }
+      // Add the newly booked time slot to the date's array
+      updatedBookedSlots[slotDate].push(slotTime);
+      
+      // Update doctor document with new booked slots within transaction
+      await DoctorModel.findByIdAndUpdate(
+        docId,                               // Find doctor by ID
+        { slots_booked: updatedBookedSlots }, // Update slots_booked field
+        { session }                          // Include in transaction
+      );
+      
     }) 
   } catch (error) {
     // Log error details for debugging purposes
