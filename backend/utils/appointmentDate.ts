@@ -1,5 +1,5 @@
 // Check if date is valid (not in the past, within reasonable future limit)
-const isValidAppointmentDate = (dateString: string): boolean => {
+export const isValidAppointmentDate = (dateString: string): boolean => {
   const appointmentDate = new Date(dateString);  // Convert string to Date object
   const today = new Date();                      // Get current date
   const maxFutureDate = new Date();              // Create date object for future limit

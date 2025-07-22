@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
 import jwt from 'jsonwebtoken';
-
+import mongoose from 'mongoose';
+import { isValidAppointmentDate } from '../utils/appointmentDate';
+import {  isValidTimeSlot, generateTimeSlots } from '../utils/timeSlot';
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -110,7 +112,66 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
         next(error);
     }
 }
-const appointmentsDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const appointmentsDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      // Start MongoDB session for transaction support (ensures data consistency)
+  const session = await mongoose.startSession();
+
+  try {
+     // Execute all database operations within a transaction
+    // If any operation fails, all changes are rolled back automatically
+    await session.withTransaction(async () => {
+      // Extract data from incoming HTTP request
+      const authenticatedUserId = req.userId;   // User ID from authentication middleware
+      const {docId, userId, slotDate, slotTime } = req.body; // Body of the request, can be used for additional data
+
+    //   // Verify that authenticated user is booking for themselves (prevent unauthorized bookings)
+    if(authenticatedUserId !== userId){
+        res.status(403).json({
+            success: false,
+            message: "You can only book appointments for yourself"
+        })
+    }
+
+      // Check if all required fields are provided
+    if(!userId || !docId || !slotDate || !slotTime){
+        res.status(400).json({
+            success: false,
+            message: "All fields are required"
+        })
+    }
+
+     // Validate that user ID and doctor ID are valid MongoDB ObjectIds
+     if(!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(docId)){
+        res.status(400).json({
+            success: false,
+            message: "Invalid user or doctor ID"
+        });
+        return;                         // Reject invalid dates
+     }
+
+     // Validate appointment date (must be today or future, within 3 months)
+     if(!isValidAppointmentDate(slotDate)){
+        res.status(400).json({
+            success: false,
+            message: "Invalid appointment date. Must be today or within 3 months."
+        });
+        return;
+     }
+
+      // Validate time slot (must be within business hours and 30-minute intervals)
+      if (!isValidTimeSlot(slotTime)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid time slot. Please select a valid time between 9:00 AM and 5:00 PM"
+        });
+        return;                              // Reject invalid time slots
+      }
+     // Retrieve user document from database and include in transaction session  
+  } catch (error) {
+    
+  }
+  
+}
 const appointmentCancelDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const doctorsDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const doctorsProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
