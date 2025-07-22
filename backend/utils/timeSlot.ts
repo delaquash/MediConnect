@@ -15,3 +15,10 @@ export const generateTimeSlots = (): string[] => {
   return slots; 
 }
 // This generates: ["09:00", "09:30", "10:00", "10:30", ..., "16:00", "16:30"]
+
+
+// Check if time slot is valid (exists in our predefined slots)
+export const isValidTimeSlot = (timeString: string): boolean => {
+  const validSlots = generateTimeSlots();   // Get array of all valid time slots
+  return validSlots.includes(timeString);   // Check if provided time exists in valid slots
+};

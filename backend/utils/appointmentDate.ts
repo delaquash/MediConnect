@@ -14,3 +14,4 @@ const isValidAppointmentDate = (dateString: string): boolean => {
   // Return true if appointment date is today or future, but within 3-month limit
   return appointmentDate >= today && appointmentDate <= maxFutureDate;
 };
+
