@@ -197,7 +197,19 @@ const appointmentsDoctor = async (req: Request, res: Response, next: NextFunctio
         });
         return;                              // Cannot book with unavailable doctor
       }
+      // Get doctor's booked slots (object with dates as keys, time arrays as values)
+      const doctorSlotsBooked = doctor.slots_booked || {};
+      // Get already booked slots for the requested date (empty array if no bookings)
+      const bookedSlotsForDate = doctorSlotsBooked[slotDate] || [];
       
+      // Check if requested time slot is already booked
+      if (bookedSlotsForDate.includes(slotTime)) {
+        res.status(409).json({               // 409 Conflict status for booking collision
+          success: false,
+          message: "This time slot is already booked. Please select another time."
+        });
+        return;                              // Cannot double-book same slot
+      }
     }) 
   } catch (error) {
     // Log error details for debugging purposes
