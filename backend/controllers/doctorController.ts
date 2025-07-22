@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { isValidAppointmentDate } from '../utils/appointmentDate';
 import {  isValidTimeSlot, generateTimeSlots } from '../utils/timeSlot';
 import UserModel from '../model/userModel';
+import AppointmentModel from '../model/appointmentModel';
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -210,6 +211,16 @@ const appointmentsDoctor = async (req: Request, res: Response, next: NextFunctio
         });
         return;                              // Cannot double-book same slot
       }
+    
+      // Check for existing appointment with same parameters (prevent duplicate bookings)
+      const existingAppointment = await AppointmentModel.findOne({
+        userId,
+        docId,
+        slotDate,
+        slotTime,
+        cancelled: false
+      }).session(session);
+
     }) 
   } catch (error) {
     // Log error details for debugging purposes
