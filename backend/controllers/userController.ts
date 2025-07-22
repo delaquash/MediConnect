@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
 import DoctorModel from '../model/doctorModel';
 import AppointmentModel from '../model/appointmentModel';
-import { isValidTimeSlot } from '../utils/timeSlot';
+import { generateTimeSlots, isValidTimeSlot } from '../utils/timeSlot';
 import { isValidAppointmentDate } from '../utils/appointmentDate';
 import mongoose from 'mongoose';
 
@@ -497,6 +497,125 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
     await session.endSession();
   }
 }
+
+
+
+// Cancel an existing appointment
+const cancelAppointment = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  // Start MongoDB session for transaction support
+  const session = await mongoose.startSession();
+  
+  try {
+    // Execute cancellation within transaction
+    await session.withTransaction(async () => {
+      // Get authenticated user ID from middleware
+      const userId = req.userId;
+      // Get appointment ID from request body
+      const { appointmentId } = req.body;
+      
+      // Find appointment that belongs to user and is not already cancelled
+      const appointment = await AppointmentModel.findOne({
+        _id: appointmentId,                  // Match appointment ID
+        userId,                              // Ensure appointment belongs to authenticated user
+        cancelled: false                     // Only find non-cancelled appointments
+      }).session(session);                   // Include in transaction
+      
+      // Check if appointment exists and is cancellable
+      if (!appointment) {
+        res.status(404).json({
+          success: false,
+          message: "Appointment not found or already cancelled"
+        });
+        return;                              // Cannot cancel non-existent or already cancelled appointment
+      }
+      
+      // Mark appointment as cancelled in database
+      await AppointmentModel.findByIdAndUpdate(
+        appointmentId,                       // Find appointment by ID
+        { cancelled: true },                 // Set cancelled field to true
+        { session }                          // Include in transaction
+      );
+      
+      // Find doctor and update their available slots
+      const doctor = await DoctorModel.findById(appointment.docId).session(session);
+      if (doctor) {                          // Only update if doctor still exists
+        // Create copy of doctor's booked slots
+        const updatedSlots = { ...doctor.slots_booked };
+        // Get current booked slots for appointment date
+        const dateSlots = updatedSlots[appointment.slotDate] || [];
+        // Remove cancelled appointment time from booked slots
+        updatedSlots[appointment.slotDate] = dateSlots.filter((slot: string) => slot !== appointment.slotTime);
+        
+        // Update doctor document with modified slots
+        await DoctorModel.findByIdAndUpdate(
+          appointment.docId,                 // Find doctor by ID
+          { slots_booked: updatedSlots },    // Update slots_booked field
+          { session }                        // Include in transaction
+        );
+      }
+      
+      // Send successful cancellation response
+      res.status(200).json({                 // 200 OK status
+        success: true,
+        message: "Appointment cancelled successfully"
+      });
+    });
+  } catch (error) {
+    // Pass any errors to Express error middleware
+    next(error);
+  } finally {
+    // Always end the MongoDB session
+    await session.endSession();
+  }
+};
+
+
+// / Get available slots for a doctor on a specific date
+const getAvailableSlots = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // Extract doctor ID and date from URL parameters
+    const { docId, date } = req.params;
+    
+    // Validate doctor ID format
+    if (!mongoose.Types.ObjectId.isValid(docId)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid doctor ID"
+      });
+      return;                                // Stop if doctor ID is malformed
+    }
+    
+    // Find doctor in database
+    const doctor = await DoctorModel.findById(docId);
+    if (!doctor) {                           // Check if doctor exists
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      });
+      return;                                // Cannot get slots for non-existent doctor
+    }
+    
+    // Generate all possible time slots for the day
+    const allSlots = generateTimeSlots();
+    // Get booked slots for the requested date (empty array if none)
+    const bookedSlots = doctor.slots_booked[date] || [];
+    // Filter out booked slots to get available slots
+    const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
+    
+    // Return availability information
+    res.status(200).json({                   // 200 OK status
+      success: true,
+      availableSlots,                        // Array of available time slots
+      totalSlots: allSlots.length,          // Total number of possible slots
+      bookedSlots: bookedSlots.length       // Number of already booked slots
+    });
+    
+  } catch (error) {
+    // Pass any errors to Express error middleware
+    next(error);
+  }
+};
+
 export {
     registerUser,
     loginUser,
@@ -504,5 +623,5 @@ export {
     updateProfile,
     bookAppointment,
     // listAppointment,
-    // cancelAppointment,
+    cancelAppointment,
 }

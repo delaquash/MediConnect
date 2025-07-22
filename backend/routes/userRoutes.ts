@@ -6,7 +6,7 @@ import {
   updateProfile,
   bookAppointment,
 //   listAppointment,
-//   cancelAppointment,
+  cancelAppointment,
 } from "../controllers/userController";
 import authUser from "../middlewares/authUser";
 import upload from "../middlewares/multer";
