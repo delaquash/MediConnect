@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { isValidAppointmentDate } from '../utils/appointmentDate';
 import {  isValidTimeSlot, generateTimeSlots } from '../utils/timeSlot';
+import UserModel from '../model/userModel';
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -167,6 +168,36 @@ const appointmentsDoctor = async (req: Request, res: Response, next: NextFunctio
         return;                              // Reject invalid time slots
       }
      // Retrieve user document from database and include in transaction session  
+     const user  = await UserModel.findById(userId).session(session)
+
+     if(!user){
+        res.status(404).json({
+            success: false,
+            message: "User not found"
+        });
+        return; // Stop further processing if user not found
+     }
+
+    //   Retrieve doctor document from database and include in transaction session  
+    const doctor = await DoctorModel.findById(docId).session(session)
+
+    if(!doctor){
+        res.status(404).json({
+            success: false,
+            message: "Doctor not found"
+        });
+        return; // Stop further processing if doctor not found
+    }
+
+     // Check if doctor is currently accepting appointments
+      if (!doctor.available) {
+        res.status(400).json({               // 400 Bad Request for unavailable doctor
+          success: false,
+          message: "Doctor is currently unavailable for appointments"
+        });
+        return;                              // Cannot book with unavailable doctor
+      }
+      
   } catch (error) {
     
   }
