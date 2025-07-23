@@ -193,7 +193,7 @@ const doctorCancelAppointment = async (req: AuthenticatedRequest, res: Response,
 
 }
 
-const appointmentComplete = async(req: any, res: Response, next: NextFunction)=>{
+const appointmentComplete = async(req: any, res: Response, next: NextFunction): Promise<void>=>{
     try {
         const  authenticatedDoctorId  = req.userId;
         const { appointmentId } = req.body;
@@ -204,6 +204,7 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction)=>
                 success: false,
                 message: "Invalid appointment ID"
             })
+            return;
         }
 
         const appointmentData = await AppointmentModel.findById(appointmentId)
@@ -217,36 +218,39 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction)=>
     }
      // Security: Only assigned doctor can complete
     if (appointmentData.docId.toString() !== authenticatedDoctorId) {
-      return res.status(403).json({
+       res.status(403).json({
         success: false,
         message: "Unauthorized"
       });
+      return;
     }
       // Check if already completed or cancelled
     if (appointmentData.isCompleted) {
-      return res.status(400).json({
+       res.status(400).json({
         success: false,
         message: "Appointment already completed"
       });
+        return;
     }
     
     if (appointmentData.cancelled) {
-      return res.status(400).json({
+       res.status(400).json({
         success: false,
         message: "Cannot complete cancelled appointment"
       });
+      return;
     }
     
     await appointmentModel.findByIdAndUpdate(appointmentId, {
       isCompleted: true,
     });
     
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "Appointment completed successfully"
     });
     } catch (error) {
-        
+        next(error)
     }
 }
 const doctorsDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
@@ -259,6 +263,7 @@ export {
     loginDoctor,
     getDoctorAppointment,
     doctorCancelAppointment,
+    appointmentComplete,
     doctorsDashboard,
     doctorsProfile,
     updateDoctorProfile
