@@ -8,6 +8,7 @@ import AppointmentModel from '../model/appointmentModel';
 import { generateTimeSlots, isValidTimeSlot } from '../utils/timeSlot';
 import { isValidAppointmentDate } from '../utils/appointmentDate';
 import mongoose from 'mongoose';
+import appointmentModel from '../model/appointmentModel';
 
 // Assuming your authUser middleware adds user info to req
 // Define custom interface extending Request
@@ -499,6 +500,28 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
 }
 
 
+const listAppointment= async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
+  try {
+    const { userId } = req.body;
+     // Validate that user ID and doctor ID are valid MongoDB ObjectIds
+     if(!mongoose.Types.ObjectId.isValid(userId)){
+        res.status(400).json({
+            success: false,
+            message: "Invalid user ID"
+        });
+        return;                         // Reject invalid dates
+     }
+     const userAppointment = await appointmentModel.find({ userId });
+     res.status(200).json({
+      success: true,
+      message: "Appointment details successfully retrieved",
+      userAppointment
+     })
+  } catch (error) {
+    next(error)
+  }
+}
+
 
 // Cancel an existing appointment
 const cancelAppointment = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -622,6 +645,6 @@ export {
     getProfile,
     updateProfile,
     bookAppointment,
-    // listAppointment,
+    listAppointment,
     cancelAppointment,
 }
