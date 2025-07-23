@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
 import { AuthenticatedRequest } from './userController';
+import appointmentModel from '../model/appointmentModel';
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -190,6 +191,63 @@ const doctorCancelAppointment = async (req: AuthenticatedRequest, res: Response,
     await session.endSession();
   }
 
+}
+
+const appointmentComplete = async(req: any, res: Response, next: NextFunction)=>{
+    try {
+        const  authenticatedDoctorId  = req.userId;
+        const { appointmentId } = req.body;
+
+        // validate appointment ID format
+        if(!mongoose.Types.ObjectId.isValid(appointmentId)){
+            res.status(400).json({
+                success: false,
+                message: "Invalid appointment ID"
+            })
+        }
+
+        const appointmentData = await AppointmentModel.findById(appointmentId)
+
+         if (!appointmentData) {
+       res.status(404).json({
+        success: false,
+        message: "Appointment not found"
+      });
+      return;
+    }
+     // Security: Only assigned doctor can complete
+    if (appointmentData.docId.toString() !== authenticatedDoctorId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+      // Check if already completed or cancelled
+    if (appointmentData.isCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: "Appointment already completed"
+      });
+    }
+    
+    if (appointmentData.cancelled) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot complete cancelled appointment"
+      });
+    }
+    
+    await appointmentModel.findByIdAndUpdate(appointmentId, {
+      isCompleted: true,
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: "Appointment completed successfully"
+    });
+    } catch (error) {
+        
+    }
 }
 const doctorsDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const doctorsProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
