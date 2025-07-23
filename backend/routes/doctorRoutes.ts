@@ -1,5 +1,5 @@
 import express from "express";
-import { loginDoctor, appointmentCancelDoctor, getDoctorAppointment, changeAvailability, doctorList, doctorsDashboard, doctorsProfile, updateDoctorProfile} from "../controllers/doctorController";
+import { loginDoctor, doctorCancelAppointment, getDoctorAppointment, changeAvailability, doctorList, doctorsDashboard, doctorsProfile, updateDoctorProfile} from "../controllers/doctorController";
 import authDoctor from "../middlewares/docAuth";
 
 
@@ -9,7 +9,7 @@ doctorRouter.get("/list", doctorList);
 doctorRouter.post("/login", loginDoctor);
 doctorRouter.get("/appointments", authDoctor, getDoctorAppointment);
 // doctorRouter.post("/complete-appointment", docAuth, appointmentsDoctor);
-// doctorRouter.post("/cancel-appointment", docAuth, appointmentCancelDoctor);
+doctorRouter.post("/cancel-appointment", authDoctor, doctorCancelAppointment);
 // doctorRouter.get("/dashboard", docAuth, doctorsDashboard);
 // doctorRouter.get("/profile", docAuth, doctorsProfile);
 // doctorRouter.post("/update-profile", docAuth, updateDoctorProfile);

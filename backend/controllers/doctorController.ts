@@ -127,7 +127,70 @@ const getDoctorAppointment = async (req: AuthenticatedRequest, res: Response) =>
         data:appointments 
     });
 };
-const appointmentCancelDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+
+
+    // Doctor cancellation function (missing from current code)
+const doctorCancelAppointment = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const session = await mongoose.startSession();
+  
+  try {
+    await session.withTransaction(async () => {
+      const doctorId = req.userId; // Authenticated doctor ID
+      const { appointmentId, reason } = req.body;
+      
+      // Find appointment belonging to this doctor
+      const appointment = await AppointmentModel.findOne({
+        _id: appointmentId,
+        docId: doctorId,           // Ensure doctor owns this appointment
+        cancelled: false
+      }).session(session);
+      
+      if (!appointment) {
+        res.status(404).json({
+          success: false,
+          message: "Appointment not found"
+        });
+        return;
+      }
+      
+      // Mark as cancelled with doctor reason
+      await AppointmentModel.findByIdAndUpdate(
+        appointmentId,
+        { 
+          cancelled: true,
+          cancelledBy: 'doctor',    // Track who cancelled
+          cancellationReason: reason
+        },
+        { session }
+      );
+      
+      // Free up the time slot
+      const doctor = await DoctorModel.findById(doctorId).session(session);
+      const updatedSlots = { ...doctor?.slots_booked };
+      const dateSlots = updatedSlots[appointment.slotDate] || [];
+      updatedSlots[appointment.slotDate] = dateSlots.filter(slot => slot !== appointment.slotTime);
+      
+      await DoctorModel.findByIdAndUpdate(
+        doctorId,
+        { slots_booked: updatedSlots },
+        { session }
+      );
+      
+      // Send notification to patient about cancellation
+      // sendCancellationNotification(appointment.userId, appointment, reason);
+      
+      res.json({
+        success: true,
+        message: "Appointment cancelled successfully"
+      });
+    });
+  } catch (error) {
+    next(error);
+  } finally {
+    await session.endSession();
+  }
+
+}
 const doctorsDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const doctorsProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
@@ -137,7 +200,7 @@ export {
     doctorList,
     loginDoctor,
     getDoctorAppointment,
-    appointmentCancelDoctor,
+    doctorCancelAppointment,
     doctorsDashboard,
     doctorsProfile,
     updateDoctorProfile
