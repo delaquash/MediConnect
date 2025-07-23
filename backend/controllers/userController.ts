@@ -12,7 +12,7 @@ import appointmentModel from '../model/appointmentModel';
 
 // Assuming your authUser middleware adds user info to req
 // Define custom interface extending Request
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
@@ -61,7 +61,7 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
             // ✅ Add file validation
              if (req.file) {
                 // File upload - upload to Cloudinary
-                const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+                const fileStr = `data:${req.file?.mimetype};base64,${req.file.buffer.toString('base64')}`;
                 const result = await cloudinary.uploader.upload(fileStr, {
                     folder: 'uploads',
                     resource_type: 'auto',

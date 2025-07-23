@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import AppointmentModel from '../model/appointmentModel';
+import { AuthenticatedRequest } from './userController';
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -110,10 +113,20 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
     }
 }
 
-const appointmentsDoctor = async (req: any, res: Response, next: NextFunction): Promise<void> => {
-      // Start MongoDB session for transaction support (ensures data consistency)
-
-}
+const getDoctorAppointment = async (req: AuthenticatedRequest, res: Response) => {
+  const doctorId = req.userId; // Assuming doctor is authenticated
+  
+  const appointments = await AppointmentModel.find({
+    docId: doctorId,
+    cancelled: false,
+    slotDate: { $gte: new Date().toISOString().split('T')[0] } // Future dates
+  }).populate('userId', 'name phone email');
+  
+    res.status(200).json({ 
+        success: true, 
+        data:appointments 
+    });
+};
 const appointmentCancelDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const doctorsDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const doctorsProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
@@ -123,7 +136,7 @@ export {
     changeAvailability,
     doctorList,
     loginDoctor,
-    appointmentsDoctor,
+    getDoctorAppointment,
     appointmentCancelDoctor,
     doctorsDashboard,
     doctorsProfile,
