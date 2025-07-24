@@ -22,8 +22,9 @@ declare global {
             
             // Additional custom properties you might need
             user?: any;                // For authentication
-            body: any;   
-            userId: any;              // Ensure body is typed
+            body: any;              
+            userId?: string;// Ensure body is typed
+            docId?: string;
         }
     }
 }

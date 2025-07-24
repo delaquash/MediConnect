@@ -12,10 +12,6 @@ import appointmentModel from '../model/appointmentModel';
 
 // Assuming your authUser middleware adds user info to req
 // Define custom interface extending Request
-export interface AuthenticatedRequest extends Request {
-  userId?: string;
-  docId?: string;
-}
 
 
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -138,7 +134,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction): Promi
     }
 }
 
-const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+const getProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.userId;
     
@@ -171,7 +167,7 @@ const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFu
   }
 };
 
-const updateProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         // Get user ID from authenticated request (set by authUser middleware)
         const userId = req.userId;
@@ -525,7 +521,7 @@ const listAppointment= async(req: Request, res: Response, next: NextFunction): P
 
 
 // Cancel an existing appointment
-const cancelAppointment = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+const cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   // Start MongoDB session for transaction support
   const session = await mongoose.startSession();
   

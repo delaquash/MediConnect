@@ -4,7 +4,6 @@ import DoctorModel from '../model/doctorModel';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
-import { AuthenticatedRequest } from './userController';
 import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
 
@@ -116,9 +115,9 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
     }
 }
 
-const getDoctorAppointment = async (req: any |AuthenticatedRequest, res: Response, next:NextFunction):Promise<void> => {
+const getDoctorAppointment = async (req: Request, res: Response, next:NextFunction):Promise<void> => {
     try {
-         const doctorId = req.docId;
+         const doctorId = req.userId;
     
     if (!doctorId) {
        res.status(400).json({
@@ -374,7 +373,68 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
   }
 };
 
-const doctorsProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // FIXED: Get doctor ID directly from req.docId (not destructured)
+    const doctorId = req.docId; // This is the authenticated doctor ID from middleware
+    
+    // Validate doctor ID format
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid doctor ID format"
+      });
+      return;
+    }
+    
+    // Find doctor profile excluding sensitive fields
+    const doctorProfile = await DoctorModel.findById(doctorId).select("-password -__v");
+    
+    if (!doctorProfile) {
+      res.status(404).json({
+        success: false,
+        message: "Doctor profile not found"
+      });
+      return;
+    }
+    
+    // Return formatted doctor profile
+    res.status(200).json({
+      success: true,
+      message: "Doctor profile retrieved successfully",
+      data: {
+        profile: {
+          id: doctorProfile._id,
+          name: doctorProfile.name,
+          email: doctorProfile.email,
+          speciality: doctorProfile.specialty,
+          degree: doctorProfile.degree,
+          experience: doctorProfile.experience,
+          about: doctorProfile.about,
+          fees: doctorProfile.fees,
+          image: doctorProfile.image,
+          address: doctorProfile.address,
+          available: doctorProfile.available,
+          totalSlots: Object.keys(doctorProfile.slots_booked || {}).length
+        }
+      }
+    });
+    
+  } catch (error: any) {
+    console.error("Get doctor profile error:", error);
+    
+    if (error.name === 'CastError') {
+      res.status(400).json({
+        success: false,
+        message: "Invalid doctor ID format"
+      });
+      return;
+    }
+    
+    next(error);
+  }
+};
+
 const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 
 export {
@@ -385,6 +445,6 @@ export {
     doctorCancelAppointment,
     appointmentComplete,
     doctorsDashboard,
-    doctorsProfile,
+    getDoctorProfile,
     updateDoctorProfile
 }
