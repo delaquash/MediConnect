@@ -8,10 +8,10 @@ const doctorRouter = express.Router();
 doctorRouter.get("/list", doctorList);
 doctorRouter.post("/login", loginDoctor);
 doctorRouter.get("/appointments", authDoctor, getDoctorAppointment);
-doctorRouter.get("/appointments", authDoctor, appointmentComplete);
+// doctorRouter.get("/appointments", authDoctor, appointmentComplete);
 // doctorRouter.post("/complete-appointment", docAuth, appointmentsDoctor);
 doctorRouter.post("/cancel-appointment", authDoctor, doctorCancelAppointment);
-// doctorRouter.get("/dashboard", docAuth, doctorsDashboard);
+doctorRouter.get("/dashboard", authDoctor, doctorsDashboard);
 // doctorRouter.get("/profile", docAuth, doctorsProfile);
 // doctorRouter.post("/update-profile", docAuth, updateDoctorProfile);
 

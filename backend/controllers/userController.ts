@@ -14,6 +14,7 @@ import appointmentModel from '../model/appointmentModel';
 // Define custom interface extending Request
 export interface AuthenticatedRequest extends Request {
   userId?: string;
+  docId?: string;
 }
 
 

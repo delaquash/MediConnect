@@ -1,3 +1,4 @@
+
 import { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
 import jwt from 'jsonwebtoken';
@@ -5,6 +6,7 @@ import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
 import { AuthenticatedRequest } from './userController';
 import appointmentModel from '../model/appointmentModel';
+import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -114,29 +116,42 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
     }
 }
 
-const getDoctorAppointment = async (req: AuthenticatedRequest, res: Response) => {
-  const doctorId = req.userId; // Assuming doctor is authenticated
-  
-  const appointments = await AppointmentModel.find({
-    docId: doctorId,
-    cancelled: false,
-    slotDate: { $gte: new Date().toISOString().split('T')[0] } // Future dates
-  }).populate('userId', 'name phone email');
-  
-    res.status(200).json({ 
-        success: true, 
-        data:appointments 
+const getDoctorAppointment = async (req: any |AuthenticatedRequest, res: Response, next:NextFunction):Promise<void> => {
+    try {
+         const doctorId = req.docId;
+    
+    if (!doctorId) {
+       res.status(400).json({
+        success: false,
+        message: 'Doctor ID not found'
+      });
+      return;
+    }
+
+    const appointments = await AppointmentModel.find({
+      docId: doctorId,
+      cancelled: false,
+      slotDate: { $gte: new Date().toISOString().split('T')[0] }
+    }).populate('userId', 'name phone email');
+
+    res.status(200).json({
+      success: true,
+      data: appointments
     });
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
 };
 
 
     // Doctor cancellation function (missing from current code)
-const doctorCancelAppointment = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+const doctorCancelAppointment = async (req: any, res: Response, next: NextFunction) => {
   const session = await mongoose.startSession();
   
   try {
     await session.withTransaction(async () => {
-      const doctorId = req.userId; // Authenticated doctor ID
+      const doctorId = req.docId; // Authenticated doctor ID
       const { appointmentId, reason } = req.body;
       
       // Find appointment belonging to this doctor
@@ -169,7 +184,7 @@ const doctorCancelAppointment = async (req: AuthenticatedRequest, res: Response,
       const doctor = await DoctorModel.findById(doctorId).session(session);
       const updatedSlots = { ...doctor?.slots_booked };
       const dateSlots = updatedSlots[appointment.slotDate] || [];
-      updatedSlots[appointment.slotDate] = dateSlots.filter(slot => slot !== appointment.slotTime);
+      updatedSlots[appointment.slotDate] = dateSlots.filter((slot: string) => slot !== appointment.slotTime);
       
       await DoctorModel.findByIdAndUpdate(
         doctorId,
@@ -195,7 +210,7 @@ const doctorCancelAppointment = async (req: AuthenticatedRequest, res: Response,
 
 const appointmentComplete = async(req: any, res: Response, next: NextFunction): Promise<void>=>{
     try {
-        const  authenticatedDoctorId  = req.userId;
+        const  authenticatedDoctorId  = req.docId;
         const { appointmentId } = req.body;
 
         // validate appointment ID format
@@ -253,7 +268,112 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction): 
         next(error)
     }
 }
-const doctorsDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
+     try {
+    // Get doctor ID from doctor auth middleware (secure)
+    const authenticatedDoctorId = req.docId;
+    
+    // Validate doctor ID format before querying database
+    if (!mongoose.Types.ObjectId.isValid(authenticatedDoctorId)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid doctor ID format"
+      });
+      return;
+    }
+    
+    // Verify doctor exists in database
+    const doctor = await DoctorModel.findById(authenticatedDoctorId);
+    if (!doctor) {
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      });
+      return;
+    }
+    
+    // Fetch all appointments for this doctor
+    const appointments = await appointmentModel.find({ 
+      docId: authenticatedDoctorId
+    }).populate('userId', 'name email phone');
+    
+    // Calculate total earnings from completed/paid appointments
+    let earnings = 0;
+    appointments.forEach((appointment) => {
+      // Count earnings only if appointment is completed OR payment is made
+      if (appointment.isCompleted || appointment.payment) {
+        earnings += appointment.amount;
+      }
+    });
+    
+    // Get unique patient count using Set for better performance
+    const uniquePatients = new Set<string>();
+    appointments.forEach((appointment) => {
+      uniquePatients.add(appointment.userId.toString());
+    });
+    
+    // Filter appointments for better dashboard metrics
+    const activeAppointments = appointments.filter(apt => !apt.cancelled);
+    const completedAppointments = appointments.filter(apt => apt.isCompleted);
+    const pendingAppointments = appointments.filter(apt => !apt.isCompleted && !apt.cancelled);
+    const todaysAppointments = appointments.filter(apt => {
+      const today = new Date().toISOString().split('T')[0];
+      return apt.slotDate === today && !apt.cancelled;
+    });
+    
+    // Get latest 5 appointments (most recent first)
+    const latestAppointments = activeAppointments
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5)
+      .map(apt => ({
+        appointmentId: apt._id,
+        patientName: apt.userData.name,
+        patientPhone: apt.userData.phone,
+        slotDate: apt.slotDate,
+        slotTime: apt.slotTime,
+        status: apt.isCompleted ? 'completed' : apt.cancelled ? 'cancelled' : 'pending',
+        amount: apt.amount,
+        paymentStatus: apt.payment ? 'paid' : 'pending'
+      }));
+    
+    // Prepare comprehensive dashboard data
+    const dashData = {
+      earnings,
+      totalAppointments: appointments.length,
+      activeAppointments: activeAppointments.length,
+      completedAppointments: completedAppointments.length,
+      pendingAppointments: pendingAppointments.length,
+      todaysAppointments: todaysAppointments.length,
+      totalPatients: uniquePatients.size,
+      latestAppointments,
+      doctorInfo: {
+        name: doctor.name,
+        speciality: doctor.specialty,
+        available: doctor.available,
+        email: doctor.email
+      }
+    };
+    
+    res.status(200).json({ 
+      success: true, 
+      dashData 
+    });
+    
+  } catch (error:any) {
+    console.error("Doctor dashboard error:", error);
+    
+    if (error.name === 'CastError') {
+      res.status(400).json({
+        success: false,
+        message: "Invalid data format"
+      });
+      return;
+    }
+    
+    next(error);
+  }
+};
+
 const doctorsProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 
