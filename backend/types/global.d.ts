@@ -1,3 +1,5 @@
+
+import { Request } from "express"; 
 declare global {
     namespace Express {
         // Custom file interface without Multer dependency
