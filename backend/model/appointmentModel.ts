@@ -3,6 +3,7 @@ import mongoose, { Document, Schema, Model } from "mongoose";
 export interface IAppointment extends Document {
   userId: string;
   docId: string;
+  email?: string;
   slotDate: string;
   slotTime: string;
   userData: Record<string, any>;
@@ -12,11 +13,13 @@ export interface IAppointment extends Document {
   cancelled: boolean;
   payment: boolean;
   isCompleted: boolean;
+
 }
 
 const appointmentSchema = new Schema<IAppointment>({
   userId: { type: String, required: true },
   docId: { type: String, required: true },
+  email:{type: String, required: true},
   slotDate: { type: String, required: true },
   slotTime: { type: String, required: true },
   userData: { type: Object, required: true },

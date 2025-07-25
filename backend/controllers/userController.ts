@@ -11,10 +11,6 @@ import mongoose from 'mongoose';
 import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedRequest } from '../types/global';
 
-// Assuming your authUser middleware adds user info to req
-// Define custom interface extending Request
-
-
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
    try {
      const {name, email, password, image, address, gender, dob, phone  } = req.body

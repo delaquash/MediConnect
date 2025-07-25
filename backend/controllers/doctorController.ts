@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
 import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
+import { PopulatedAppointment } from "../types/type"
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -115,36 +116,108 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
     }
 }
 
-const getDoctorAppointment = async (req: Request, res: Response, next:NextFunction):Promise<void> => {
-    try {
-         const doctorId = req.userId;
+const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // FIXED: Use req.docId instead of req.userId for doctor authentication
+    const doctorId = req.docId; // From doctor auth middleware
     
-    if (!doctorId) {
-       res.status(400).json({
+    // Validate doctor ID format
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      res.status(400).json({
         success: false,
-        message: 'Doctor ID not found'
+        message: "Invalid doctor ID format"
       });
       return;
     }
-
-    const appointments = await AppointmentModel.find({
+    
+    // Get query parameters for filtering (optional)
+    const { status, date, page = 1, limit = 10 } = req.query;
+    
+    // Build query filter
+    const filter: any = { 
       docId: doctorId,
-      cancelled: false,
-      slotDate: { $gte: new Date().toISOString().split('T')[0] }
-    }).populate('userId', 'name phone email');
-
+      cancelled: false, // Only non-cancelled appointments
+      slotDate: { 
+        $gte: new Date().toISOString().split('T')[0] // Future and today's appointments
+      }
+    };
+    
+    // Add additional filters if provided
+    if (status === 'completed') {
+      filter.isCompleted = true;
+    } else if (status === 'pending') {
+      filter.isCompleted = false;
+    }
+    
+    if (date) {
+      filter.slotDate = date; // Specific date filter
+    }
+    
+    // Calculate pagination
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+    
+    // Fetch appointments with population and sorting
+    const appointments = await AppointmentModel.find(filter)
+      .populate('userId', 'name phone email') // Populate user details
+      .sort({ slotDate: 1, slotTime: 1 }) // Sort by date and time
+      .skip(skip)
+      .limit(limitNum);
+    
+    // Get total count for pagination
+    const totalAppointments = await AppointmentModel.countDocuments(filter);
+    
+    // Format appointments for better response structure
+    const formattedAppointments = appointments.map(apt => ({
+      appointmentId: apt._id,
+      patient: {
+        // id: apt.userId?._id,
+        name: apt.userData.name,
+        phone: apt.userData.phone,
+        // email: apt.userId.email,
+        address: apt.userData.address
+      },
+      appointment: {
+        date: apt.slotDate,
+        time: apt.slotTime,
+        amount: apt.amount,
+        status: apt.isCompleted ? 'completed' : 'pending',
+        paymentStatus: apt.payment ? 'paid' : 'pending',
+        createdAt: apt.date
+      }
+    }));
+    
     res.status(200).json({
       success: true,
-      data: appointments
+      message: "Appointments retrieved successfully",
+      data: {
+        appointments: formattedAppointments,
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(totalAppointments / limitNum),
+          totalAppointments,
+          hasNext: pageNum < Math.ceil(totalAppointments / limitNum),
+          hasPrev: pageNum > 1
+        }
+      }
     });
-    } catch (error) {
-        console.log(error)
-        next(error)
+    
+  } catch (error:any) {
+    console.error("Get doctor appointments error:", error);
+    
+    if (error.name === 'CastError') {
+      res.status(400).json({
+        success: false,
+        message: "Invalid ID format"
+      });
+      return;
     }
+    
+    next(error);
+  }
 };
 
-
-    // Doctor cancellation function (missing from current code)
 const doctorCancelAppointment = async (req: any, res: Response, next: NextFunction) => {
   const session = await mongoose.startSession();
   
@@ -441,7 +514,7 @@ export {
     changeAvailability,
     doctorList,
     loginDoctor,
-    getDoctorAppointment,
+    getDoctorAppointments,
     doctorCancelAppointment,
     appointmentComplete,
     doctorsDashboard,

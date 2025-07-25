@@ -2,7 +2,7 @@ import express from "express";
 import { loginDoctor, 
     appointmentComplete, 
     doctorCancelAppointment, 
-    getDoctorAppointment,
+    getDoctorAppointments,
      changeAvailability, 
      doctorList,
       doctorsDashboard, 
@@ -15,7 +15,7 @@ const doctorRouter = express.Router();
 
 doctorRouter.get("/list", doctorList);
 doctorRouter.post("/login", loginDoctor);
-doctorRouter.get("/appointments", authDoctor, getDoctorAppointment);
+doctorRouter.get("/appointments", authDoctor, getDoctorAppointments);
 // doctorRouter.get("/appointments", authDoctor, appointmentComplete);
 // doctorRouter.post("/complete-appointment", docAuth, appointmentsDoctor);
 doctorRouter.post("/cancel-appointment", authDoctor, doctorCancelAppointment);

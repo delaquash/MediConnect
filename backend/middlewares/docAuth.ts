@@ -9,7 +9,7 @@ interface JwtPayload {
 }
 // TypeScript interface for authenticated doctor requests
 export interface AuthenticatedDoctorRequest extends Request {
-  docId: string;           // Doctor's ID from JWT token
+  docId?: string;           // Doctor's ID from JWT token
   doctor?: any;            // Optional: Full doctor document
 }
 // Doctor authentication middleware
