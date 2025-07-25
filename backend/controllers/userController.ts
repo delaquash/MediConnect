@@ -9,6 +9,7 @@ import { generateTimeSlots, isValidTimeSlot } from '../utils/timeSlot';
 import { isValidAppointmentDate } from '../utils/appointmentDate';
 import mongoose from 'mongoose';
 import appointmentModel from '../model/appointmentModel';
+import { AuthenticatedRequest } from '../types/global';
 
 // Assuming your authUser middleware adds user info to req
 // Define custom interface extending Request
@@ -58,7 +59,7 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
             // ✅ Add file validation
              if (req.file) {
                 // File upload - upload to Cloudinary
-                const fileStr = `data:${req.file?.mimetype};base64,${req.file.buffer.toString('base64')}`;
+                const fileStr = `data:${req.file?.mimetype};base64,${req.file?.buffer?.toString('base64')}`;
                 const result = await cloudinary.uploader.upload(fileStr, {
                     folder: 'uploads',
                     resource_type: 'auto',
@@ -134,7 +135,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction): Promi
     }
 }
 
-const getProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.userId;
     
@@ -236,7 +237,7 @@ const updateProfile = async (req: Request, res: Response, next: NextFunction): P
         if (imageFile) {
             try {
                 // Create base64 string from file buffer
-                const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+                const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
                 
                 // Upload to Cloudinary
                 const result = await cloudinary.uploader.upload(fileStr, {

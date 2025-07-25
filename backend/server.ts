@@ -6,7 +6,7 @@ import connectCloudinary from "./config/cloudinary";
 import adminRouter from "./routes/adminRouter";
 import doctorRouter from "./routes/doctorRoutes";
 import userRouter from "./routes/userRoutes";
-import "./types/global"
+// import "./types/global"
 
 // app config
 const app = express();

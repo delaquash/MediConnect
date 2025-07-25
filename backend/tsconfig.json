@@ -10,6 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "typeRoots": ["./node_modules/@types", "./types"],
   },
-  "include": ["src/**/*", "./types/global.d.ts"],
+  "include": ["src/**/*", "types", "types/global.d.ts"],
   "exclude": ["node_modules"]
 }
