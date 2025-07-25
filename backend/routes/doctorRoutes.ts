@@ -20,7 +20,7 @@ doctorRouter.get("/appointments", authDoctor, getDoctorAppointments);
 // doctorRouter.post("/complete-appointment", docAuth, appointmentsDoctor);
 doctorRouter.post("/cancel-appointment", authDoctor, doctorCancelAppointment);
 doctorRouter.get("/dashboard", authDoctor, doctorsDashboard);
-// doctorRouter.get("/profile", docAuth, doctorsProfile);
+doctorRouter.get("/profile", authDoctor, getDoctorProfile);
 doctorRouter.post("/update-profile", authDoctor, updateDoctorProfile);
 
 export default doctorRouter; // Export the router for use in server setup   

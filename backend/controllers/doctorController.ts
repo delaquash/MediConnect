@@ -122,7 +122,7 @@ const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Respo
     const doctorId = req.docId; // From doctor auth middleware
     
     // Validate doctor ID format
-    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+    if (!doctorId || !mongoose.Types.ObjectId.isValid(doctorId)) {
       res.status(400).json({
         success: false,
         message: "Invalid doctor ID format"
@@ -452,7 +452,7 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
     const doctorId = req.docId; // This is the authenticated doctor ID from middleware
     
     // Validate doctor ID format
-    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+    if (!doctorId || !mongoose.Types.ObjectId.isValid(doctorId)) {
       res.status(400).json({
         success: false,
         message: "Invalid doctor ID format"
