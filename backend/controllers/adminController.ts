@@ -3,6 +3,7 @@ import DoctorModel, { IDoctor } from '../model/doctorModel';
 import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
+import AppointmentModel from '../model/appointmentModel';
 
 const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -33,7 +34,7 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
         // ✅ Add file validation
          if (req.file) {
             // File upload - upload to Cloudinary
-            const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+            const fileStr = `data:${req.file.mimetype};base64,${req?.file?.buffer?.toString('base64')}`;
             const result = await cloudinary.uploader.upload(fileStr, {
                 folder: 'uploads',
                 resource_type: 'auto',
@@ -129,11 +130,30 @@ const allDoctors = async (req: Request, res: Response, next: NextFunction): Prom
 
 const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        
-    } catch (error) {
-        next(error);
-        
-    }
+        const adminAppointment = await AppointmentModel
+        .find({})  // this is to get all the information about the appointment
+        .populate("userId", "name, phone, email, dob") // Get patient details such as name
+        .populate("doctorId", "name, phone, specialty")
+        .sort({ date: -1 })  // Sort by date  i.e latest date
+    
+    
+        // Send successful response with all appointments data
+
+
+    res.status(200).json({ 
+      success: true, 
+      adminAppointment // Return the appointments array directly
+    });
+
+  } catch (error) {
+    // Log error details for debugging purposes
+    console.error("Admin appointments error:", error);
+    
+    // Send error response to client with error message
+    res.status(500).json({ 
+      success: false, 
+      message: error.message // Include actual error message for troubleshooting
+    });
 }
 const appointmentCancel = async (req: Request, res: Response, next: NextFunction) => {}
 const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {}
