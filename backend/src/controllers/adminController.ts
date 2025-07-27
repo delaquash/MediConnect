@@ -152,6 +152,7 @@ const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction
     });
 }
 }
+
  const appointmentCancel = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
      // Start database transaction to ensure all operations succeed or fail together
         const session = await mongoose.startSession();
