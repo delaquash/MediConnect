@@ -6,7 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import AppointmentModel from '../model/appointmentModel';
 import mongoose from 'mongoose';
 
-export const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { name, email, password, image, specialty, degree, experience, about, available, fees, address, slots_booked } = req.body as IDoctor;
         
@@ -76,8 +76,7 @@ export const addDoctor = async (req: Request, res: Response, next: NextFunction)
     } 
 }
 
-// export const allDoctors = async (req: Request, res: Response, next: NextFunction) => {}
-export const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { email, password } = req.body;
 
@@ -108,7 +107,7 @@ export const loginAdmin = async (req: Request, res: Response, next: NextFunction
     } 
 }
 
-export const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
     console.log("🔍 allDoctors route hit!"); // Add this line
     
@@ -129,24 +128,20 @@ export const allDoctors = async (req: Request, res: Response, next: NextFunction
     }
 }
 
-export const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const adminAppointment = await AppointmentModel
         .find({})  // this is to get all the information about the appointment
         .populate("userId", "name, phone, email, dob") // Get patient details such as name
         .populate("doctorId", "name, phone, specialty")
         .sort({ date: -1 })  // Sort by date  i.e latest date
-    
-    
         // Send successful response with all appointments data
-
-
     res.status(200).json({ 
       success: true, 
       adminAppointment // Return the appointments array directly
     });
 
-  } catch (error) {
+  } catch (error: any) {
     // Log error details for debugging purposes
     console.error("Admin appointments error:", error);
     
@@ -156,8 +151,8 @@ export const appointmentsAdmin = async (req: Request, res: Response, next: NextF
       message: error.message // Include actual error message for troubleshooting
     });
 }
-
-export const appointmentCancel = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
+}
+ const appointmentCancel = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
      // Start database transaction to ensure all operations succeed or fail together
         const session = await mongoose.startSession();
     try {
@@ -228,7 +223,7 @@ export const appointmentCancel = async (req: Request, res: Response, next: NextF
         const dateSlots = updatedSlots[appointment.slotDate] || [];
         
         // Remove the cancelled appointment's time slot from the array
-        updatedSlots[appointment.slotDate] = dateSlots.filter(slot => slot !== appointment.slotTime);
+        updatedSlots[appointment.slotDate] = dateSlots.filter((slot: string) => slot !== appointment.slotTime);
         
         // If no more slots exist for this date, remove the date entry completely
         if (updatedSlots[appointment.slotDate].length === 0) {
@@ -301,15 +296,19 @@ export const appointmentCancel = async (req: Request, res: Response, next: NextF
    
 }
 
-
-
-export const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {}
+const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        
+    } catch (error) {
+        
+    }
+}
 
 export  {
-    // addDoctor,
-    // loginAdmin,
-    // allDoctors,
-    // appointmentsAdmin,
-    // appointmentCancel,
-    // adminDashboard,
+    addDoctor,
+    loginAdmin,
+    allDoctors,
+    appointmentsAdmin,
+    appointmentCancel,
+    adminDashboard,
 }
