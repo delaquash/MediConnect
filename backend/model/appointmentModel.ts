@@ -1,8 +1,8 @@
 import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface IAppointment extends Document {
-  userId: string;
-  docId: string;
+  userId: any;
+  docId: any;
   email?: string;
   slotDate: string;
   slotTime: string;
@@ -10,9 +10,12 @@ export interface IAppointment extends Document {
   docData: Record<string, any>;
   amount: number;
   date: number;
-  cancelled: boolean;
   payment: boolean;
   isCompleted: boolean;
+  cancelled?: boolean;
+  cancelledBy?: string;
+  cancellationReason?: string;
+  cancelledAt?: Date;
 
 }
 

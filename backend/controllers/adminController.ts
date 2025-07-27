@@ -6,7 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import AppointmentModel from '../model/appointmentModel';
 import mongoose from 'mongoose';
 
-const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { name, email, password, image, specialty, degree, experience, about, available, fees, address, slots_booked } = req.body as IDoctor;
         
@@ -77,7 +77,7 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
 }
 
 // export const allDoctors = async (req: Request, res: Response, next: NextFunction) => {}
-const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { email, password } = req.body;
 
@@ -108,7 +108,7 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
     } 
 }
 
-const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
     console.log("🔍 allDoctors route hit!"); // Add this line
     
@@ -129,7 +129,7 @@ const allDoctors = async (req: Request, res: Response, next: NextFunction): Prom
     }
 }
 
-const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const adminAppointment = await AppointmentModel
         .find({})  // this is to get all the information about the appointment
@@ -156,10 +156,12 @@ const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction
       message: error.message // Include actual error message for troubleshooting
     });
 }
-const appointmentCancel = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        // Start database transaction to ensure all operations succeed or fail together
+
+export const appointmentCancel = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
+     // Start database transaction to ensure all operations succeed or fail together
         const session = await mongoose.startSession();
+    try {
+       
         const { appointmentId, cancellationReason } = req.body
 
         // check if an appointment ID was provided
@@ -179,16 +181,134 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
         });
         return;
       }
-    } catch (error) {
+
+         // Find the appointment and populate patient and doctor details
+         const appointment = await AppointmentModel
+            .findById(appointmentId)
+            .populate("userId","name, email, dob")
+            .populate("docId", " name, specialty, email")
+            .session(session); // Use the transaction session
+
+        if(!appointment){
+        res.status(404).json({
+          success: false,
+          message: "Appointment not found"
+        });
+        return;
+      }
+      
+      // Prevent cancelling an appointment that's already been cancelled
+      if (appointment.cancelled) {
+        res.status(400).json({
+          success: false,
+          message: "Appointment is already cancelled"
+        });
+        return;
+      }
+
+      // STEP 1: Update the appointment record to mark it as cancelled
+      const appointmentUpdate = await AppointmentModel.findByIdAndUpdate(
+        appointmentId, 
+        {
+            cancelled: true,
+            cancelledBy: "admin",
+            cancellationReason: cancellationReason || 'Cancelled by admin', // Store reason or default message
+            cancelledAt: new Date() // Record the exact time of cancellation
+        },
+        { session, new: true } // Use transaction and return updated document
+      )
+
+      // STEP 2: Free up the doctor's time slot so it becomes available again
+      const doctor = await DoctorModel.findById(appointment.docId._id).session(session);
+      if (doctor) {
+        // Create a copy of the doctor's current booked slots
+        const updatedSlots = { ...doctor.slots_booked };
         
+        // Get the array of time slots for the appointment date
+        const dateSlots = updatedSlots[appointment.slotDate] || [];
+        
+        // Remove the cancelled appointment's time slot from the array
+        updatedSlots[appointment.slotDate] = dateSlots.filter(slot => slot !== appointment.slotTime);
+        
+        // If no more slots exist for this date, remove the date entry completely
+        if (updatedSlots[appointment.slotDate].length === 0) {
+          delete updatedSlots[appointment.slotDate];
+        }
+        
+        // Update the doctor's record with the freed-up slots
+        await DoctorModel.findByIdAndUpdate(
+          appointment.docId._id,
+          { slots_booked: updatedSlots },
+          { session } // Use the same transaction session
+        );
+      }
+      // STEP 3: Send success response with comprehensive information about the cancellation
+      res.status(200).json({
+        success: true,
+        message: "Appointment cancelled successfully by admin",
+        data: {
+          appointmentId: appointmentUpdate?.id, // ID of the cancelled appointment
+          cancellationDetails: {
+            cancelledBy: 'admin', // Who performed the cancellation
+            cancelledAt: appointmentUpdate?.cancelledAt, // When it was cancelled
+            reason: appointmentUpdate?.cancellationReason // Why it was cancelled
+          },
+          affectedParties: {
+            patient: appointment.userId?.name, // Patient who was affected
+            doctor: appointment.docId.name // Doctor who was affected
+          },
+          slotFreed: {
+            date: appointment.slotDate, // Date that became available again
+            time: appointment.slotTime // Time that became available again
+          }
+        }
+      });
+    ;
+    
+  } catch (error: any) {
+    // Log the error for debugging purposes
+    console.error("Admin cancel appointment error:", error);
+    
+    // Handle validation errors (invalid data format, missing required fields)
+    if (error.name === 'ValidationError') {
+      res.status(400).json({
+        success: false,
+        message: "Validation error: Please check your input data"
+      });
+      return;
     }
+    
+    // Handle database casting errors (invalid ObjectId format)
+    if (error.name === 'CastError') {
+      res.status(400).json({
+        success: false,
+        message: "Invalid ID format"
+      });
+      return;
+    }
+    
+    // Generic error response for any other unexpected errors
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel appointment"
+    });
+    
+  } finally {
+    // Always close the database session, whether operation succeeded or failed
+    await session.endSession();
+
+  }
+   
 }
-const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {}
+
+
+
+export const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {}
 
 export  {
-    addDoctor,
-    loginAdmin,
-    allDoctors,
+    // addDoctor,
+    // loginAdmin,
+    // allDoctors,
     // appointmentsAdmin,
     // appointmentCancel,
     // adminDashboard,

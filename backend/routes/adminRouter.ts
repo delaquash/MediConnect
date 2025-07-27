@@ -3,8 +3,8 @@ import {
   addDoctor,
   allDoctors,
   loginAdmin,
-  // appointmentsAdmin,
-  // appointmentCancel,
+  appointmentsAdmin,
+  appointmentCancel,
   // adminDashboard,
 } from "../controllers/adminController";
 import upload from "../middlewares/multer";
@@ -22,8 +22,8 @@ adminRouter.get("/all-doctors",
    authAdmin, 
    allDoctors);
 adminRouter.post("/change-availability", authAdmin, changeAvailability);
-// adminRouter.get("/appointments", authAdmin, appointmentsAdmin);
-// adminRouter.post("/cancel-appointment", authAdmin, appointmentCancel);
+adminRouter.get("/appointments", authAdmin, appointmentsAdmin);
+adminRouter.post("/cancel-appointment", authAdmin, appointmentCancel);
 // adminRouter.get("/dashboard", authAdmin, adminDashboard);
 
 export default adminRouter;
