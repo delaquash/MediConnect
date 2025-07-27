@@ -20,6 +20,11 @@ export interface IAppointment extends Document {
 }
 
 const appointmentSchema = new Schema<IAppointment>({
+  // docId: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: 'Doctor', // 👈 This should match your Doctor model name
+  //   required: true,
+  // },
   userId: { type: String, required: true },
   docId: { type: String, required: true },
   email:{type: String, required: true},

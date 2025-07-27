@@ -133,7 +133,7 @@ const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction
         const adminAppointment = await AppointmentModel
         .find({})  // this is to get all the information about the appointment
         .populate("userId", "name, phone, email, dob") // Get patient details such as name
-        .populate("doctorId", "name, phone, specialty")
+        .populate("docId", "name, phone, specialty")
         .sort({ date: -1 })  // Sort by date  i.e latest date
         // Send successful response with all appointments data
     res.status(200).json({ 
@@ -153,7 +153,7 @@ const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction
 }
 }
 
- const appointmentCancel = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
+const appointmentCancel = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
      // Start database transaction to ensure all operations succeed or fail together
         const session = await mongoose.startSession();
     try {
