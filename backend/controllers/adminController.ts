@@ -4,6 +4,7 @@ import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
 import AppointmentModel from '../model/appointmentModel';
+import mongoose from 'mongoose';
 
 const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -155,7 +156,33 @@ const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction
       message: error.message // Include actual error message for troubleshooting
     });
 }
-const appointmentCancel = async (req: Request, res: Response, next: NextFunction) => {}
+const appointmentCancel = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // Start database transaction to ensure all operations succeed or fail together
+        const session = await mongoose.startSession();
+        const { appointmentId, cancellationReason } = req.body
+
+        // check if an appointment ID was provided
+        if(!appointmentId){
+            res.status(400).json({
+                success: false,
+                message: "Appointment ID is required"
+            })
+            return;
+        }
+
+           // Validate that the appointment ID is a valid MongoDB ObjectId format
+      if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid appointment ID format"
+        });
+        return;
+      }
+    } catch (error) {
+        
+    }
+}
 const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {}
 
 export  {
