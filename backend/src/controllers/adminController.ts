@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
 import AppointmentModel from '../model/appointmentModel';
 import mongoose from 'mongoose';
+import UserModel from '../model/userModel';
+import appointmentModel from '../model/appointmentModel';
 
 const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -299,10 +301,109 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
 
 const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        
-    } catch (error) {
-        
+        // Get all counts in parallel for better performance (runs simultaneously instead of sequentially)
+    const [doctors, users, appointments] = await Promise.all([
+      DoctorModel.find({}), // Get all doctors from database
+      UserModel.find({}), // Get all users/patients from database  
+      appointmentModel.find({}) // Get all appointments from database
+        .populate('userId', 'name email phone') // Include patient details in appointment data
+        .populate('docId', 'name speciality') // Include doctor details in appointment data
+        .sort({ date: -1 }) // Sort by creation date, newest first
+    ]);
+    // Calculate total revenue from completed or paid appointments
+    let totalRevenue = 0;
+    appointments.forEach((appointment) => {
+      // Only count revenue if appointment is completed OR payment is confirmed
+      if (appointment.isCompleted || appointment.payment) {
+        totalRevenue += appointment.amount; // Add appointment fee to total revenue
+      }
+    });
+
+    // Filter appointments by status for better dashboard metrics
+    const completedAppointments = appointments.filter(apt => apt.isCompleted); // Finished appointments
+    const cancelledAppointments = appointments.filter(apt => apt.cancelled); // Cancelled appointments
+    const pendingAppointments = appointments.filter(apt => !apt.isCompleted && !apt.cancelled); // Upcoming appointments
+
+    // Get today's date for filtering today's appointments
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const todaysAppointments = appointments.filter(apt => apt.slotDate === today && !apt.cancelled);
+
+    // Get the 5 most recent appointments for quick admin overview
+    const latestAppointments = appointments
+      .slice(0, 5) // Take first 5 (already sorted by date desc)
+      .map(apt => ({
+        appointmentId: apt._id,
+        patientName: apt.userData?.name || 'Unknown Patient', // Handle case where patient data might be missing
+        doctorName: apt.docId?.name || 'Unknown Doctor', // Handle case where doctor data might be missing
+        doctorSpeciality: apt.docId?.speciality || 'N/A',
+        appointmentDate: apt.slotDate,
+        appointmentTime: apt.slotTime,
+        amount: apt.amount,
+        status: apt.isCompleted ? 'completed' : apt.cancelled ? 'cancelled' : 'pending', // Determine status
+        paymentStatus: apt.payment ? 'paid' : 'pending' // Check if payment is made
+      }));
+
+    // Get unique patient count using Set to avoid duplicates
+    const uniquePatients = new Set<string>();
+    appointments.forEach((appointment) => {
+      uniquePatients.add(appointment.userId.toString()); // Add patient ID to set (automatically handles duplicates)
+    });
+
+    // Prepare comprehensive dashboard data object
+    const dashData = {
+      // Basic counts
+      totalDoctors: doctors.length,
+      totalPatients: users.length, // Total registered users/patients
+      totalAppointments: appointments.length,
+      uniquePatients: uniquePatients.size, // Actual number of patients who booked appointments
+      
+      // Financial data
+      totalRevenue,
+      
+      // Appointment breakdown by status
+      appointmentStats: {
+        completed: completedAppointments.length,
+        cancelled: cancelledAppointments.length,
+        pending: pendingAppointments.length,
+        today: todaysAppointments.length
+      },
+      
+      // Recent activity for quick admin overview
+      latestAppointments,
+      
+      // Quick stats for admin decision making
+      doctorAvailability: {
+        availableDoctors: doctors.filter(doc => doc.available).length, // Doctors currently accepting appointments
+        unavailableDoctors: doctors.filter(doc => !doc.available).length // Doctors not accepting new appointments
+      }
+    };
+
+    // Send successful response with dashboard data
+    res.status(200).json({ 
+      success: true, 
+      message: "Admin dashboard data retrieved successfully",
+      dashData 
+    });
+
+  } catch (error: any) {
+    // Log error details for debugging
+    console.error("Admin dashboard error:", error);
+    
+    // Handle different types of errors appropriately
+    if (error.name === 'CastError') {
+      res.status(400).json({
+        success: false,
+        message: "Invalid data format in database query"
+      });
+      return;
     }
+
+    // Generic error response for unexpected errors
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to load dashboard data" 
+    });
+  }
 }
 
 export  {

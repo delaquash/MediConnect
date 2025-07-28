@@ -16,11 +16,10 @@ const doctorRouter = express.Router();
 doctorRouter.get("/list", doctorList);
 doctorRouter.post("/login", loginDoctor);
 doctorRouter.get("/appointments", authDoctor, getDoctorAppointments);
-// doctorRouter.get("/appointments", authDoctor, appointmentComplete);
 // doctorRouter.post("/complete-appointment", docAuth, appointmentsDoctor);
 doctorRouter.post("/cancel-appointment", authDoctor, doctorCancelAppointment);
 doctorRouter.get("/dashboard", authDoctor, doctorsDashboard);
 doctorRouter.get("/profile", authDoctor, getDoctorProfile);
 doctorRouter.post("/update-profile", authDoctor, updateDoctorProfile);
 
-export default doctorRouter; // Export the router for use in server setup   
+export default doctorRouter;
