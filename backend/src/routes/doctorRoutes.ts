@@ -16,7 +16,7 @@ const doctorRouter = express.Router();
 doctorRouter.get("/list", doctorList);
 doctorRouter.post("/login", loginDoctor);
 doctorRouter.get("/appointments", authDoctor, getDoctorAppointments);
-// doctorRouter.post("/complete-appointment", docAuth, appointmentsDoctor);
+doctorRouter.post("/complete-appointment", authDoctor, appointmentComplete);
 doctorRouter.post("/cancel-appointment", authDoctor, doctorCancelAppointment);
 doctorRouter.get("/dashboard", authDoctor, doctorsDashboard);
 doctorRouter.get("/profile", authDoctor, getDoctorProfile);

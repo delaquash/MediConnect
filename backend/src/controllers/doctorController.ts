@@ -297,10 +297,10 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction): 
         const appointmentData = await AppointmentModel.findById(appointmentId)
 
          if (!appointmentData) {
-       res.status(404).json({
-        success: false,
-        message: "Appointment not found"
-      });
+          res.status(404).json({
+            success: false,
+            message: "Appointment not found"
+          });
       return;
     }
      // Security: Only assigned doctor can complete
@@ -328,13 +328,16 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction): 
       return;
     }
     
-    await appointmentModel.findByIdAndUpdate(appointmentId, {
+    const appointmentDetails = await appointmentModel.findByIdAndUpdate(appointmentId, {
       isCompleted: true,
     });
     
     res.status(200).json({
       success: true,
-      message: "Appointment completed successfully"
+      message: "Appointment completed successfully",
+      data: {
+        appointmentDetails
+      }
     });
     } catch (error) {
         next(error)
@@ -519,5 +522,6 @@ export {
     appointmentComplete,
     doctorsDashboard,
     getDoctorProfile,
-    updateDoctorProfile
+    updateDoctorProfile,
+    
 }
