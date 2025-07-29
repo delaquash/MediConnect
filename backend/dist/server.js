@@ -26,7 +26,7 @@ app.use(express_1.default.urlencoded({ extended: true })); // Parse URL-encoded 
 app.use("/api/v1/admin", adminRouter_1.default);
 app.use("/api/v1/doctor", doctorRoutes_1.default);
 app.use("/api/v1/user", userRoutes_1.default);
-app.get("/", (req, res) => {
+app.get("/api/v1/", (req, res) => {
     res.send("API WORKING");
 });
 app.listen(port, () => console.log("Server started", port));
