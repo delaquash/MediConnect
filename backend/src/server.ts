@@ -22,11 +22,11 @@ app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // ✅ API endpoints
-app.use("/api/v1/admin", adminRouter);
-app.use("/api/v1/doctor", doctorRouter);
-app.use("/api/v1/user", userRouter); 
+app.use("admin", adminRouter);
+app.use("doctor", doctorRouter);
+app.use("user", userRouter); 
 
-app.get("/api/v1/", (req: Request, res: Response) => {
+app.get("", (req: Request, res: Response) => {
   res.send("API WORKING");
 });
 

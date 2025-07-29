@@ -23,10 +23,10 @@ app.use((0, cors_1.default)()); // Move this up
 app.use(express_1.default.json()); // Parse JSON bodies
 app.use(express_1.default.urlencoded({ extended: true })); // Parse URL-encoded bodies
 // ✅ API endpoints
-app.use("/api/v1/admin", adminRouter_1.default);
-app.use("/api/v1/doctor", doctorRoutes_1.default);
-app.use("/api/v1/user", userRoutes_1.default);
-app.get("/api/v1/", (req, res) => {
+app.use("admin", adminRouter_1.default);
+app.use("doctor", doctorRoutes_1.default);
+app.use("user", userRoutes_1.default);
+app.get("", (req, res) => {
     res.send("API WORKING");
 });
 app.listen(port, () => console.log("Server started", port));
