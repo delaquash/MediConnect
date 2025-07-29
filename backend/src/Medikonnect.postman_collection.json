@@ -1,0 +1,503 @@
+{
+	"info": {
+		"_postman_id": "46351954-d4fd-4a5a-9a81-14d11abd7596",
+		"name": "Medikonnect",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "8706694"
+	},
+	"item": [
+		{
+			"name": "Add Doctors",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwOTc0MywiZXhwIjoxNzU1NTAxNzQzfQ.c0S-s5-ivjBoql2sE7K3ix2yc_Qla6NzSqUa0YEVhL4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n        \"name\": \"Olaide Emmanuel\",\r\n        \"email\": \"olaide1192@gmail.com\",\r\n        \"password\": \"Equarshie85@\",\r\n        \"image\": \"https://res.cloudinary.com/delaquarsh/image/upload/v1718717616/w1wushxqt2aorazppexq.jpg\",\r\n        \"specialty\": \"Surgeon\",\r\n        \"degree\": \"MBBS\",\r\n        \"experience\": \"Mid-Level\",\r\n        \"about\": \"A young medical doctor who is so passionate about humanity and saving lives.\",\r\n        \"available\": true,\r\n        \"fees\": 700,\r\n        \"address\": {\r\n            \"line1\": \"123 Hospital Rd\",\r\n            \"line2\": \"Suite 5\",\r\n            \"city\": \"Lagos\",\r\n            \"state\": \"Lagos\",\r\n            \"zip\": \"100001\"\r\n        },\r\n        \"date\": \"2025-07-19T05:37:23.086Z\",\r\n        \"slots_booked\": {\r\n            \"2025-07-20\": [\r\n                \"09:00\",\r\n                \"11:00\"\r\n            ],\r\n            \"2025-07-21\": [\r\n                \"10:30\"\r\n            ]\r\n        }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/admin/add-doctor"
+			},
+			"response": []
+		},
+		{
+			"name": "login Admin/Doctor",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"olaide1191@gmail.com\",\r\n    \"password\":\"Equarshie85@\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/admin/login"
+			},
+			"response": []
+		},
+		{
+			"name": "All Doctors",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwNTE0MSwiZXhwIjoxNzU1NDk3MTQxfQ.izZFZsuof5bTngbWhbKLF6jxnIKVfMSWp8MtVf6dWAc"
+					}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwOTc0MywiZXhwIjoxNzU1NTAxNzQzfQ.c0S-s5-ivjBoql2sE7K3ix2yc_Qla6NzSqUa0YEVhL4",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "\"/\"",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"olaide1191@gmail.com\",\r\n    \"password\":\"Equarshie85@\"\r\n}"
+				},
+				"url": "http://localhost:5000/api/v1/admin/all-doctors"
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwOTc0MywiZXhwIjoxNzU1NTAxNzQzfQ.c0S-s5-ivjBoql2sE7K3ix2yc_Qla6NzSqUa0YEVhL4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"docId\": \"687a995f2f47bbdb8691e50a\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/admin/change-availability"
+			},
+			"response": []
+		},
+		{
+			"name": "doctor list",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwOTc0MywiZXhwIjoxNzU1NTAxNzQzfQ.c0S-s5-ivjBoql2sE7K3ix2yc_Qla6NzSqUa0YEVhL4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n        \"name\": \"Olaide Emmanuel\",\r\n        \"email\": \"olaide1192@gmail.com\",\r\n        \"password\": \"Equarshie85@\",\r\n        \"image\": \"https://res.cloudinary.com/delaquarsh/image/upload/v1718717616/w1wushxqt2aorazppexq.jpg\",\r\n        \"specialty\": \"Surgeon\",\r\n        \"degree\": \"MBBS\",\r\n        \"experience\": \"Mid-Level\",\r\n        \"about\": \"A young medical doctor who is so passionate about humanity and saving lives.\",\r\n        \"available\": true,\r\n        \"fees\": 700,\r\n        \"address\": {\r\n            \"line1\": \"123 Hospital Rd\",\r\n            \"line2\": \"Suite 5\",\r\n            \"city\": \"Lagos\",\r\n            \"state\": \"Lagos\",\r\n            \"zip\": \"100001\"\r\n        },\r\n        \"date\": \"2025-07-19T05:37:23.086Z\",\r\n        \"slots_booked\": {\r\n            \"2025-07-20\": [\r\n                \"09:00\",\r\n                \"11:00\"\r\n            ],\r\n            \"2025-07-21\": [\r\n                \"10:30\"\r\n            ]\r\n        }\r\n}"
+				},
+				"url": "http://localhost:5000/api/v1/doctor/list"
+			},
+			"response": []
+		},
+		{
+			"name": "doctor login",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwOTc0MywiZXhwIjoxNzU1NTAxNzQzfQ.c0S-s5-ivjBoql2sE7K3ix2yc_Qla6NzSqUa0YEVhL4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"olaide1192@gmail.com\",\r\n    \"password\": \"Equarshie85@\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/doctor/login"
+			},
+			"response": []
+		},
+		{
+			"name": "Login User",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwOTc0MywiZXhwIjoxNzU1NTAxNzQzfQ.c0S-s5-ivjBoql2sE7K3ix2yc_Qla6NzSqUa0YEVhL4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"olaide1192@gmail.com\",\r\n    \"password\": \"Equarshie85@\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/doctor/login"
+			},
+			"response": []
+		},
+		{
+			"name": "User Profile",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "token",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4N2QxNjE0NGYxNjhkM2JkNDgzYTEzMiIsImlhdCI6MTc1MzAyODUyMSwiZXhwIjoxNzU1NjIwNTIxfQ.LC-_AMXz0I7Gzhgyick45WfXpi3m2-MeV-MvFJxTK2Y",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"olaide1192@gmail.com\",\r\n    \"password\": \"Equarshie85@\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/user/get-profile"
+			},
+			"response": []
+		},
+		{
+			"name": "Register User",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwOTc0MywiZXhwIjoxNzU1NTAxNzQzfQ.c0S-s5-ivjBoql2sE7K3ix2yc_Qla6NzSqUa0YEVhL4",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"Seun Kuku\",\r\n    \"email\": \"olaide1192@gmail.com\",\r\n    \"password\": \"Equarshie85@\",\r\n    \"image\": \"https://res.cloudinary.com/delaquarsh/image/upload/v1718717616/w1wushxqt2aorazppexq.jpg\",\r\n    \"address\": {\r\n            \"line1\": \"123 Hospital Rd\",\r\n            \"line2\": \"Suite 5\",\r\n            \"city\": \"Lagos\",\r\n            \"state\": \"Lagos\",\r\n            \"zip\": \"100001\"\r\n    },\r\n    \"gender\":\"male\",\r\n    \"dob\":\"12-11-2001\",\r\n    \"phone\":\"08064965574\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/user/register"
+			},
+			"response": []
+		},
+		{
+			"name": "Update Profile",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MjkwOTc0MywiZXhwIjoxNzU1NTAxNzQzfQ.c0S-s5-ivjBoql2sE7K3ix2yc_Qla6NzSqUa0YEVhL4",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"Seun Kuku\",\r\n    \"email\": \"olaide1192@gmail.com\",\r\n    \"password\": \"Equarshie85@\",\r\n    \"image\": \"https://res.cloudinary.com/delaquarsh/image/upload/v1718717616/w1wushxqt2aorazppexq.jpg\",\r\n    \"address\": {\r\n            \"line1\": \"123 Hospital Rd\",\r\n            \"line2\": \"Suite 5\",\r\n            \"city\": \"Lagos\",\r\n            \"state\": \"Lagos\",\r\n            \"zip\": \"100001\"\r\n    },\r\n    \"gender\":\"male\",\r\n    \"dob\":\"12-11-2001\",\r\n    \"phone\":\"08064965574\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/user/register"
+			},
+			"response": []
+		},
+		{
+			"name": "User Book Appointment",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "token",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4N2QxNjE0NGYxNjhkM2JkNDgzYTEzMiIsImlhdCI6MTc1MzIwMDcwMywiZXhwIjoxNzU1NzkyNzAzfQ.fkw3SB0Yfpb5txNkNMF1EEfEdi_N7cS7sgGtQS0eJZk",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"docId\": \"687b497dd1d8f58cebdd07a5\", \r\n    \"userId\": \"687d16144f168d3bd483a132\", \r\n    \"slotDate\": \"07-27-2025\",\r\n    \"slotTime\": \"15:00\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/user/book-appointment"
+			},
+			"response": []
+		},
+		{
+			"name": "Appointments",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "dtoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4N2I0OTdkZDFkOGY1OGNlYmRkMDdhNSIsImlhdCI6MTc1MzMzODgyOCwiZXhwIjoxNzU1OTMwODI4fQ.vN96RB77Q5Rue-PHToLBxEJWTnWSbZeJ7DTVN1Y6Dio",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/doctor/appointments"
+			},
+			"response": []
+		},
+		{
+			"name": "Doctor Cancel Appointment",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "dtoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4N2I0OTdkZDFkOGY1OGNlYmRkMDdhNSIsImlhdCI6MTc1MzMzODgyOCwiZXhwIjoxNzU1OTMwODI4fQ.vN96RB77Q5Rue-PHToLBxEJWTnWSbZeJ7DTVN1Y6Dio",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"appointmentId\": \"6881d614c2350d459e1fa48b\",\r\n  \"reason\": \"I have an important engagement\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/doctor/cancel-appointment"
+			},
+			"response": []
+		},
+		{
+			"name": "Doctor Dashboard",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "dtoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4N2I0OTdkZDFkOGY1OGNlYmRkMDdhNSIsImlhdCI6MTc1MzMzODgyOCwiZXhwIjoxNzU1OTMwODI4fQ.vN96RB77Q5Rue-PHToLBxEJWTnWSbZeJ7DTVN1Y6Dio",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/doctor/dashboard"
+			},
+			"response": []
+		},
+		{
+			"name": "Appointment by Admin",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MzYzNzM1MywiZXhwIjoxNzU2MjI5MzUzfQ.Q2G3HEb8WcdUWEUVNo8TQvIUbJzh53a0UhjuwUTUgO4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/admin/appointments"
+			},
+			"response": []
+		},
+		{
+			"name": "Admin Dashboard",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "atoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im9sYWlkZTExOTFAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWQiOiJhZG1pbiIsImlhdCI6MTc1MzYzNzM1MywiZXhwIjoxNzU2MjI5MzUzfQ.Q2G3HEb8WcdUWEUVNo8TQvIUbJzh53a0UhjuwUTUgO4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/admin/dashboard"
+			},
+			"response": []
+		},
+		{
+			"name": "Admin Dashboard Copy",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "dtoken",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4N2I0OTdkZDFkOGY1OGNlYmRkMDdhNSIsImlhdCI6MTc1MzMzODgyOCwiZXhwIjoxNzU1OTMwODI4fQ.vN96RB77Q5Rue-PHToLBxEJWTnWSbZeJ7DTVN1Y6Dio",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"appointmentId\": \"687fd2d156395571e81b21bd\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/v1/doctor/complete-appointment"
+			},
+			"response": []
+		}
+	]
+}
