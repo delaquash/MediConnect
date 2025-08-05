@@ -10,17 +10,29 @@
 
 import { createRootRoute } from '@tanstack/react-router'
 
+import { Route as MyprofileRouteImport } from './routes/myprofile'
+import { Route as MyappointmentRouteImport } from './routes/myappointment'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AppointmentRouteImport } from './routes/appointment'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DoctorsIndexRouteImport } from './routes/doctors/index'
-import { Route as DoctorsMyprofileRouteImport } from './routes/doctors/myprofile'
 import { Route as DoctorsSpecialityRouteImport } from './routes/doctors/$speciality'
+import { Route as AppointmentDocIdRouteImport } from './routes/appointment/$docId'
 
 const rootRouteImport = createRootRoute()
 
+const MyprofileRoute = MyprofileRouteImport.update({
+  id: '/myprofile',
+  path: '/myprofile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyappointmentRoute = MyappointmentRouteImport.update({
+  id: '/myappointment',
+  path: '/myappointment',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -51,46 +63,52 @@ const DoctorsIndexRoute = DoctorsIndexRouteImport.update({
   path: '/doctors/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DoctorsMyprofileRoute = DoctorsMyprofileRouteImport.update({
-  id: '/doctors/myprofile',
-  path: '/doctors/myprofile',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DoctorsSpecialityRoute = DoctorsSpecialityRouteImport.update({
   id: '/doctors/$speciality',
   path: '/doctors/$speciality',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppointmentDocIdRoute = AppointmentDocIdRouteImport.update({
+  id: '/$docId',
+  path: '/$docId',
+  getParentRoute: () => AppointmentRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/appointment': typeof AppointmentRoute
+  '/appointment': typeof AppointmentRouteWithChildren
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
+  '/myappointment': typeof MyappointmentRoute
+  '/myprofile': typeof MyprofileRoute
+  '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
-  '/doctors/myprofile': typeof DoctorsMyprofileRoute
   '/doctors': typeof DoctorsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/appointment': typeof AppointmentRoute
+  '/appointment': typeof AppointmentRouteWithChildren
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
+  '/myappointment': typeof MyappointmentRoute
+  '/myprofile': typeof MyprofileRoute
+  '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
-  '/doctors/myprofile': typeof DoctorsMyprofileRoute
   '/doctors': typeof DoctorsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/appointment': typeof AppointmentRoute
+  '/appointment': typeof AppointmentRouteWithChildren
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
+  '/myappointment': typeof MyappointmentRoute
+  '/myprofile': typeof MyprofileRoute
+  '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
-  '/doctors/myprofile': typeof DoctorsMyprofileRoute
   '/doctors/': typeof DoctorsIndexRoute
 }
 export interface FileRouteTypes {
@@ -101,8 +119,10 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/login'
+    | '/myappointment'
+    | '/myprofile'
+    | '/appointment/$docId'
     | '/doctors/$speciality'
-    | '/doctors/myprofile'
     | '/doctors'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -111,8 +131,10 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/login'
+    | '/myappointment'
+    | '/myprofile'
+    | '/appointment/$docId'
     | '/doctors/$speciality'
-    | '/doctors/myprofile'
     | '/doctors'
   id:
     | '__root__'
@@ -121,24 +143,41 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/login'
+    | '/myappointment'
+    | '/myprofile'
+    | '/appointment/$docId'
     | '/doctors/$speciality'
-    | '/doctors/myprofile'
     | '/doctors/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  AppointmentRoute: typeof AppointmentRoute
+  AppointmentRoute: typeof AppointmentRouteWithChildren
   ContactRoute: typeof ContactRoute
   LoginRoute: typeof LoginRoute
+  MyappointmentRoute: typeof MyappointmentRoute
+  MyprofileRoute: typeof MyprofileRoute
   DoctorsSpecialityRoute: typeof DoctorsSpecialityRoute
-  DoctorsMyprofileRoute: typeof DoctorsMyprofileRoute
   DoctorsIndexRoute: typeof DoctorsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/myprofile': {
+      id: '/myprofile'
+      path: '/myprofile'
+      fullPath: '/myprofile'
+      preLoaderRoute: typeof MyprofileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myappointment': {
+      id: '/myappointment'
+      path: '/myappointment'
+      fullPath: '/myappointment'
+      preLoaderRoute: typeof MyappointmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -181,13 +220,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DoctorsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/doctors/myprofile': {
-      id: '/doctors/myprofile'
-      path: '/doctors/myprofile'
-      fullPath: '/doctors/myprofile'
-      preLoaderRoute: typeof DoctorsMyprofileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/doctors/$speciality': {
       id: '/doctors/$speciality'
       path: '/doctors/$speciality'
@@ -195,17 +227,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DoctorsSpecialityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/appointment/$docId': {
+      id: '/appointment/$docId'
+      path: '/$docId'
+      fullPath: '/appointment/$docId'
+      preLoaderRoute: typeof AppointmentDocIdRouteImport
+      parentRoute: typeof AppointmentRoute
+    }
   }
 }
+
+interface AppointmentRouteChildren {
+  AppointmentDocIdRoute: typeof AppointmentDocIdRoute
+}
+
+const AppointmentRouteChildren: AppointmentRouteChildren = {
+  AppointmentDocIdRoute: AppointmentDocIdRoute,
+}
+
+const AppointmentRouteWithChildren = AppointmentRoute._addFileChildren(
+  AppointmentRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  AppointmentRoute: AppointmentRoute,
+  AppointmentRoute: AppointmentRouteWithChildren,
   ContactRoute: ContactRoute,
   LoginRoute: LoginRoute,
+  MyappointmentRoute: MyappointmentRoute,
+  MyprofileRoute: MyprofileRoute,
   DoctorsSpecialityRoute: DoctorsSpecialityRoute,
-  DoctorsMyprofileRoute: DoctorsMyprofileRoute,
   DoctorsIndexRoute: DoctorsIndexRoute,
 }
 export const routeTree = rootRouteImport
