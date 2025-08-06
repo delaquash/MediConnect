@@ -1,6 +1,8 @@
 // / contexts/AppContext.tsx
 import { createContext, useContext, useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient, type UseQueryResult} from "@tanstack/react-query";
+// import { useQuery, useMutation, useQueryClient,type UseQueryResult// contexts/AppContext.tsx
+// import { createContext, useContext, useState } from "react";
+import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import axios from 'axios';
 
@@ -10,14 +12,30 @@ interface Doctor {
   name: string;
   email: string;
   speciality: string;
-  // add other doctor properties
+  image: string;
+  degree: string;
+  experience: string;
+  about: string;
+  fees: number;
+  address: {
+    line1: string;
+    line2: string;
+  };
+  available: boolean;
 }
 
 interface UserData {
   _id: string;
   name: string;
   email: string;
-  // add other user properties
+  phone: string;
+  address: {
+    line1: string;
+    line2: string;
+  };
+  gender: string;
+  dob: string;
+  image: string;
 }
 
 interface AppContextType {
@@ -40,9 +58,9 @@ export const useAppContext = () => {
   return context;
 };
 
-// API functions
+// API functions with proper typing
 const api = {
-  getDoctors: async (backendUrl: string) => {
+  getDoctors: async (backendUrl: string): Promise<Doctor[]> => {
     const { data } = await axios.get(`${backendUrl}/api/doctor/list`);
     if (!data.success) {
       throw new Error(data.message);
@@ -50,47 +68,61 @@ const api = {
     return data.doctors;
   },
 
-  getUserProfile: async (backendUrl: string, token: string) => {
+  getUserProfile: async (backendUrl: string, token: string): Promise<UserData> => {
     const { data } = await axios.get(`${backendUrl}/api/user/get-profile`, {
       headers: { token }
     });
     if (!data.success) {
       throw new Error(data.message);
     }
-    return data.userData;
+    return data?.userData;
   }
 };
 
-// Custom hooks for server state
+// Custom hooks for server state - FIXED VERSION
 export const useDoctors = (): UseQueryResult<Doctor[], Error> => {
   const { backendUrl } = useAppContext();
   
-  return useQuery({
+  return useQuery<Doctor[], Error>({
     queryKey: ['doctors'],
     queryFn: () => api.getDoctors(backendUrl),
-    onError: (error: any) => {
-      console.error(error);
-      toast.error(error.message || 'Failed to fetch doctors');
-    },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime in v5)
   });
 };
 
-export const useUserProfile = () => {
+export const useUserProfile = (): UseQueryResult<UserData, Error> => {
   const { backendUrl, token } = useAppContext();
   
-  return useQuery({
+  return useQuery<UserData, Error>({
     queryKey: ['userProfile', token],
     queryFn: () => api.getUserProfile(backendUrl, token),
     enabled: !!token, // Only run if token exists
-    error: (error: any) => {
-      console.error(error);
-    //   toast.error(error.message || 'Failed to fetch user profile');
-    },
     staleTime: 2 * 60 * 1000, // 2 minutes
-    cacheTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
+};
+
+// Alternative with error handling using useEffect
+export const useDoctorsWithErrorHandling = () => {
+  const { backendUrl } = useAppContext();
+  
+  const query = useQuery<Doctor[], Error>({
+    queryKey: ['doctors'],
+    queryFn: () => api.getDoctors(backendUrl),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  // Handle errors separately
+  useEffect(() => {
+    if (query.error) {
+      console.error(query.error);
+      toast.error(query.error.message || 'Failed to fetch doctors');
+    }
+  }, [query.error]);
+
+  return query;
 };
 
 // Custom hook for mutations
@@ -98,7 +130,7 @@ export const useUpdateUserProfile = () => {
   const { backendUrl, token } = useAppContext();
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<UserData, Error, Partial<UserData>>({
     mutationFn: async (userData: Partial<UserData>) => {
       const { data } = await axios.put(
         `${backendUrl}/api/user/update-profile`,
@@ -110,20 +142,50 @@ export const useUpdateUserProfile = () => {
       }
       return data.userData;
     },
-    onSuccess: (userData: any) => {
+    onSuccess: (userData) => {
       // Update the cache
       queryClient.setQueryData(['userProfile', token], userData);
       toast.success('Profile updated successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error(error);
       toast.error(error.message || 'Failed to update profile');
     },
   });
 };
 
+// Book appointment mutation
+export const useBookAppointment = () => {
+  const { backendUrl, token } = useAppContext();
+  const queryClient = useQueryClient();
+
+  return useMutation<any, Error, { doctorId: string; slotDate: string; slotTime: string }>({
+    mutationFn: async ({ doctorId, slotDate, slotTime }) => {
+      const { data } = await axios.post(
+        `${backendUrl}/api/user/book-appointment`,
+        { doctorId, slotDate, slotTime },
+        { headers: { token } }
+      );
+      if (!data.success) {
+        throw new Error(data.message);
+      }
+      return data;
+    },
+    onSuccess: () => {
+      // Invalidate appointments query to refetch
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      toast.success('Appointment booked successfully');
+    },
+    onError: (error: Error) => {
+      console.error(error);
+      toast.error(error.message || 'Failed to book appointment');
+    },
+  });
+};
+
 // Context Provider - now only for client state
 const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = useQueryClient();
   const currencySymbol = '₹';
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [token, setTokenState] = useState(
@@ -142,8 +204,8 @@ const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     setToken('');
-    // Optionally clear all queries on logout
-    // queryClient.clear();
+    // Clear all queries on logout
+    queryClient.clear();
   };
 
   const value = {
@@ -160,5 +222,6 @@ const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
     </AppContext.Provider>
   );
 };
+
 
 export default AppContextProvider;

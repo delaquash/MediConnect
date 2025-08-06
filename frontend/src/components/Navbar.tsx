@@ -15,7 +15,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout()
-    queryClient.clear();
+    // queryClient.clear();
     navigate({ to: '/login' })
   }
 
