@@ -15,7 +15,7 @@ const Navbar = () => {
     { path: '/contact', label: 'CONTACT' }
   ]
   return (
-    <nav className="flex items-center justify-between text-sm py-4 mb-5 border-b border-b-[#ADADAD]">
+    <nav className="!flex !items-center !justify-between !text-sm !py-4 !mb-5 !border-b !border-b-[#ADADAD]">
       {/* logo */}
       <img 
         className='w-44 cursor-pointer' 
@@ -29,9 +29,9 @@ const Navbar = () => {
           <Link
             key={index}
             to={nav.path}
-            className="[&.active]:red"
+            className="[&.active]:text-primary"
           >
-            <li className='py-1'> {nav.label}</li>
+            <li className='!py-1'> {nav.label}</li>
           </Link>
          ))}
         </ul>
@@ -40,7 +40,7 @@ const Navbar = () => {
       <div className='flex items-center gap-4 '>
          <button 
             onClick={() => navigate({ to: '/login' })} 
-            className='bg-primary text-white px-8 py-3 rounded-full font-light hidden md:block hover:bg-primary-dark transition-colors'
+            className='!bg-[#5F6FFF] !text-white !px-8 !py-3 !rounded-full !font-bold !text-xl hidden md:block !transition-colors'
           >
             Create account
           </button>
