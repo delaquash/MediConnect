@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { assets } from '../assets/assets'
 import { Link, useNavigate, useLocation } from '@tanstack/react-router'
 import { useAppContext, useUserProfile } from '../context/AppContext'
+// import { useQueryClient } from '@tanstack/react-query';
 
 const Navbar = () => {
   const navigate = useNavigate()
@@ -14,8 +15,15 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout()
+    queryClient.clear();
     navigate({ to: '/login' })
   }
+
+//   const logout = () => {
+//   setToken('');
+//   // Clear all cached queries on logout
+//   queryClient.clear();
+// };
 
   // Helper function to check if link is active
   const isActiveLink = (path: string) => {
@@ -68,7 +76,7 @@ const Navbar = () => {
             ) : (
               <img 
                 className='w-8 rounded-full' 
-                src={userData.image} 
+                // src={userData?.image? userData.image : assets.default_avatar} 
                 alt="User Avatar" 
               />
             )}

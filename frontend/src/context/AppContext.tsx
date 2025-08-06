@@ -1,6 +1,6 @@
 // / contexts/AppContext.tsx
 import { createContext, useContext, useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type UseQueryResult} from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import axios from 'axios';
 
@@ -62,7 +62,7 @@ const api = {
 };
 
 // Custom hooks for server state
-export const useDoctors = () => {
+export const useDoctors = (): UseQueryResult<Doctor[], Error> => {
   const { backendUrl } = useAppContext();
   
   return useQuery({
