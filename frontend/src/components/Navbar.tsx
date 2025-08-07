@@ -8,7 +8,7 @@ const Navbar = () => {
     const location = useLocation()
     const [showMenu, setShowMenu] = useState(false)
 
-    const { token, logout } = useAppContext()
+    const { token, setToken, logout } = useAppContext()
     const  { data: userData, isLoading } = useUserProfile()
   // Navigation items
   const navItems = [
@@ -17,6 +17,11 @@ const Navbar = () => {
     { path: '/about', label: 'ABOUT' },
     { path: '/contact', label: 'CONTACT' }
   ]
+
+  const handleLogout = () => {
+    logout()
+    setToken("")
+  }
   return (
     <nav className="!flex !items-center !justify-between !text-sm !py-4 !mb-5 !border-b !border-b-[#ADADAD]">
       {/* logo */}
@@ -60,17 +65,37 @@ const Navbar = () => {
             <img  className='w-2.5' alt='Dropdown' src={assets.dropdown_icon}  />
 
             {/* Dropdown Menu */}
+            <div className='absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:hidden'>
+              <div className='min-w-48 bg-[#F8F8F8] flex flex-col rounded font-bold text-[#4B5563] gap-4 p-4 shadow-lg'>
+                <Link
+                  className='hover:text-black cursor-pointer transition-colors' 
+                  to="/myprofile"
+                >
+                    My Profile
+                  </Link>
+                <Link
+                  className='hover:text-black cursor-pointer transition-colors' 
+                  to="/myappointment"
+                >
+                  My Appointment
+                </Link>
+                <p
+                  className='hover:text-black cursor-pointer transition-colors'
+                  onClick={handleLogout}
+                >
+                  Logout
+                </p>
+              </div>
             </div>
-          ) 
-          :
-          
-           <button 
+            </div>
+          ) :(
+              <button 
             onClick={() => navigate({ to: '/login' })} 
             className='!bg-[#5F6FFF] !text-white cursor-pointer !px-8 !py-3 !rounded-full !font-bold !text-xl hidden md:block !transition-colors'
           >
             Create account
           </button>
-        }
+          )}
       </div>
     </nav>
   )
