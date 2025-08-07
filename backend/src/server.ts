@@ -6,22 +6,21 @@ import connectCloudinary from "./config/cloudinary";
 import adminRouter from "./routes/adminRouter";
 import doctorRouter from "./routes/doctorRoutes";
 import userRouter from "./routes/userRoutes";
-// import "./types/global"
 
 // app config
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ✅ Connect to services
+// Connect to services
 connectDB();
 connectCloudinary();
 
-// ✅ Middlewares (CORS first, then body parsers)
-app.use(cors()); // Move this up
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+//  Middlewares (CORS first, then body parsers)
+app.use(cors()); 
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true })); 
 
-// ✅ API endpoints
+//  API endpoints
 app.use("/admin", adminRouter);
 app.use("/doctor", doctorRouter);
 app.use("/user", userRouter); 

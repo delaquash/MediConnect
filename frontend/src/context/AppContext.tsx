@@ -1,7 +1,4 @@
-// / contexts/AppContext.tsx
 import { createContext, useContext, useState, useEffect } from "react";
-// import { useQuery, useMutation, useQueryClient,type UseQueryResult// contexts/AppContext.tsx
-// import { createContext, useContext, useState } from "react";
 import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import axios from 'axios';
@@ -61,7 +58,7 @@ export const useAppContext = () => {
 // API functions with proper typing
 const api = {
   getDoctors: async (backendUrl: string): Promise<Doctor[]> => {
-    const { data } = await axios.get(`${backendUrl}/api/doctor/list`);
+    const { data } = await axios.get(`${backendUrl}/doctor/list`);
     if (!data.success) {
       throw new Error(data.message);
     }
@@ -69,7 +66,7 @@ const api = {
   },
 
   getUserProfile: async (backendUrl: string, token: string): Promise<UserData> => {
-    const { data } = await axios.get(`${backendUrl}/api/user/get-profile`, {
+    const { data } = await axios.get(`${backendUrl}/user/get-profile`, {
       headers: { token }
     });
     if (!data.success) {
@@ -79,7 +76,6 @@ const api = {
   }
 };
 
-// Custom hooks for server state - FIXED VERSION
 export const useDoctors = (): UseQueryResult<Doctor[], Error> => {
   const { backendUrl } = useAppContext();
   
@@ -103,7 +99,7 @@ export const useUserProfile = (): UseQueryResult<UserData, Error> => {
   });
 };
 
-// Alternative with error handling using useEffect
+
 export const useDoctorsWithErrorHandling = () => {
   const { backendUrl } = useAppContext();
   
@@ -133,7 +129,7 @@ export const useUpdateUserProfile = () => {
   return useMutation<UserData, Error, Partial<UserData>>({
     mutationFn: async (userData: Partial<UserData>) => {
       const { data } = await axios.put(
-        `${backendUrl}/api/user/update-profile`,
+        `${backendUrl}/user/update-profile`,
         userData,
         { headers: { token } }
       );
@@ -162,7 +158,7 @@ export const useBookAppointment = () => {
   return useMutation<any, Error, { doctorId: string; slotDate: string; slotTime: string }>({
     mutationFn: async ({ doctorId, slotDate, slotTime }) => {
       const { data } = await axios.post(
-        `${backendUrl}/api/user/book-appointment`,
+        `${backendUrl}/user/book-appointment`,
         { doctorId, slotDate, slotTime },
         { headers: { token } }
       );

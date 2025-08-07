@@ -7,6 +7,9 @@ const Navbar = () => {
   const navigate = useNavigate()
     const location = useLocation()
     const [showMenu, setShowMenu] = useState(false)
+
+    const { token, logout } = useAppContext()
+    const  { data: userData, isLoading } = useUserProfile()
   // Navigation items
   const navItems = [
     { path: '/', label: 'HOME' },
@@ -38,12 +41,36 @@ const Navbar = () => {
       {/* </div> */}
 
       <div className='flex items-center gap-4 '>
-         <button 
+        {/* if account exist, token is stored and with token user should see something different */}
+        {token && userData ? 
+          (
+            <div className='flex items-center gap-2 cursor-pointer group relative '>
+              { isLoading  ? 
+              (
+                <div className='w-8 h-8 rounded-full bg-gray-200 animate-pulse '/>
+              ) :
+              (
+                <img 
+                  src={userData?.image }
+                  className='w-8 rounded-full'
+                  alt='User Image'
+                />
+              )
+            }
+            <img  className='w-2.5' alt='Dropdown' src={assets.dropdown_icon}  />
+
+            {/* Dropdown Menu */}
+            </div>
+          ) 
+          :
+          
+           <button 
             onClick={() => navigate({ to: '/login' })} 
-            className='!bg-[#5F6FFF] !text-white !px-8 !py-3 !rounded-full !font-bold !text-xl hidden md:block !transition-colors'
+            className='!bg-[#5F6FFF] !text-white cursor-pointer !px-8 !py-3 !rounded-full !font-bold !text-xl hidden md:block !transition-colors'
           >
             Create account
           </button>
+        }
       </div>
     </nav>
   )
