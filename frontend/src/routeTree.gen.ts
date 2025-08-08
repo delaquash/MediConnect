@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MyprofileRouteImport } from './routes/myprofile'
 import { Route as MyappointmentRouteImport } from './routes/myappointment'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as CreateAccountRouteImport } from './routes/createAccount'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AppointmentRouteImport } from './routes/appointment'
 import { Route as AboutRouteImport } from './routes/about'
@@ -33,6 +34,11 @@ const MyappointmentRoute = MyappointmentRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateAccountRoute = CreateAccountRouteImport.update({
+  id: '/createAccount',
+  path: '/createAccount',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/appointment': typeof AppointmentRouteWithChildren
   '/contact': typeof ContactRoute
+  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/appointment': typeof AppointmentRouteWithChildren
   '/contact': typeof ContactRoute
+  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/appointment': typeof AppointmentRouteWithChildren
   '/contact': typeof ContactRoute
+  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/appointment'
     | '/contact'
+    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/appointment'
     | '/contact'
+    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/appointment'
     | '/contact'
+    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AppointmentRoute: typeof AppointmentRouteWithChildren
   ContactRoute: typeof ContactRoute
+  CreateAccountRoute: typeof CreateAccountRoute
   LoginRoute: typeof LoginRoute
   MyappointmentRoute: typeof MyappointmentRoute
   MyprofileRoute: typeof MyprofileRoute
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/createAccount': {
+      id: '/createAccount'
+      path: '/createAccount'
+      fullPath: '/createAccount'
+      preLoaderRoute: typeof CreateAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AppointmentRoute: AppointmentRouteWithChildren,
   ContactRoute: ContactRoute,
+  CreateAccountRoute: CreateAccountRoute,
   LoginRoute: LoginRoute,
   MyappointmentRoute: MyappointmentRoute,
   MyprofileRoute: MyprofileRoute,
