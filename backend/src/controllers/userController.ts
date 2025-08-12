@@ -13,9 +13,6 @@ import { AuthenticatedRequest } from '../types/global';
 import { validateProfileData } from '../helper/validateProfileData';
 import { IProfileUpdateData } from '../types/type';
 
-// interface 
-
-
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
    try {
      const {name, email, password, image, address, gender, dob, phone  } = req.body
@@ -170,125 +167,120 @@ const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFu
 };
 
 const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        // Get user ID from authenticated request (set by authUser middleware)
-        const userId = req.userId;
+ try {
+ 
+    const userId = req.userId;
+  
+    const { name, phone, address, dob, gender, password } = req.body;
+  
+    const imageFile = req.file;
+
+    if (!userId) {
+      res.status(401).json({ 
+        success: false, 
+        message: "User not authenticated" 
+      });
+      return;
+    }
+  
+    const errors = validateProfileData({ name, phone, address, dob, gender, password }, false);
+    if (errors && errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors 
+      });
+      return;
+    }
+
+    // Find existing user to verify they exist
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+      return;
+    }
+    // Prepare update data object
+    const updateData: any = {};
+
+    if (name !== undefined) updateData.name = name.trim();
+    if (phone !== undefined) updateData.phone = phone.trim();
+    if (address !== undefined) {
+      updateData.address = {
+        line1: address.line1?.trim() || "",
+        line2: address.line2?.trim() || ""
+      };
+    }
+    if (dob !== undefined) updateData.dob = new Date(dob);
+    if (gender !== undefined) updateData.gender = gender;
+    if (password !== undefined) updateData.password = password; 
+
+    // Handle image upload with same logic as profile completion
+    if (imageFile) {
+      try {
         
-        // Extract fields from request body
-        const { name, password, address, dob, phone } = req.body;
-        const imageFile = req.file;
-        
-        // Validate user authentication
-        if (!userId) {
-            res.status(401).json({ 
-                success: false, 
-                message: "User not authenticated" 
-            });
-            return;
-        }
-        
-        // Validate required fields (excluding password as it's optional for updates)
-        if (!name || !address || !dob || !phone) {
-            res.status(400).json({ 
-                success: false, 
-                message: "Please fill all required fields (name, address, dob, phone)" 
-            });
-            return;
-        }
-        
-        // Check if user exists
-        const existingUser = await UserModel.findById(userId);
-        if (!existingUser) {
-            res.status(404).json({ 
-                success: false, 
-                message: "User not found" 
-            });
-            return;
-        }
-        
-        // Prepare update object with basic fields
-        const updateData: any = {
-            name,
-            address,
-            dob,
-            phone
-        };
-        
-        // Handle password update if provided
-        if (password) {
-            // Validate password strength
-            if (!validator.isStrongPassword(password, {
-                minLength: 8,
-                minLowercase: 1,
-                minUppercase: 1,
-                minNumbers: 1,
-                minSymbols: 1,
-            })) {
-                res.status(400).json({
-                    success: false,
-                    message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
-                });
-                return;
-            }
-            // Password will be automatically hashed by pre-save middleware
-            updateData.password = password;
-        }
-        
-        // Handle image upload if provided
-        if (imageFile) {
-            try {
-                // Create base64 string from file buffer
-                const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
-                
-                // Upload to Cloudinary
-                const result = await cloudinary.uploader.upload(fileStr, {
-                    folder: 'uploads',
-                    resource_type: 'auto',
-                });
-                
-                // Add image URL to update data
-                updateData.image = result.secure_url;
-            } catch (uploadError) {
-                console.error("Image upload error:", uploadError);
-                res.status(500).json({
-                    success: false,
-                    message: "Failed to upload image"
-                });
-                return;
-            }
-        }
-        
-        // Update user profile in a single operation
-        const updatedUser = await UserModel.findByIdAndUpdate(
-            userId, 
-            updateData,
-            { 
-                new: true, // Return updated document
-                runValidators: true // Run schema validators
-            }
-        ).select("-password"); // Exclude password from response
-        
-        // Check if update was successful
-        if (!updatedUser) {
-            res.status(500).json({
-                success: false,
-                message: "Failed to update profile"
-            });
-            return;
-        }
-        
-        // Send success response
-        res.status(200).json({
-            success: true,
-            message: "Profile updated successfully",
-            user: updatedUser
+        const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+      
+        const result = await cloudinary.uploader.upload(fileStr, {
+          folder: 'user-profiles',
+          resource_type: 'auto',
+          transformation: [
+            { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+            { quality: 'auto:good' }
+          ]
         });
         
-    } catch (error) {
-        console.error("Update profile error:", error);
-        next(error);
+        updateData.image = result.secure_url;
+      } catch (uploadError) {
+        console.error("Image upload error:", uploadError);
+        res.status(500).json({
+          success: false,
+          message: "Failed to upload image"
+        });
+        return;
+      }
     }
+
+    // Smart profile completion detection - check if profile should now be marked complete
+    const updatedUserTemp = { ...user.toObject(), ...updateData }; // Merge existing + new data
+    
+    // Check if all required fields are now present
+    const isProfileComplete = ['name', 'phone', 'address.line1', 'dob'].every(field => {
+      const value = field.split('.').reduce((obj, key) => obj?.[key], updatedUserTemp);
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    // If profile wasn't complete before but is complete now, mark it
+    if (isProfileComplete && !user.profileComplete) {
+      updateData.profileComplete = true;
+      updateData.profileCompletedAt = new Date();
+    }
+
+    // Update user document with only the changed fields
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      updateData,
+      { 
+        new: true, 
+        runValidators: true 
+      }
+    ).select("-password"); 
+
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Update profile error:", error);
+    next(error); 
+  }
 };
+
 
 const bookAppointment = async (req: any, res: Response, next: NextFunction): Promise<void> => {
       // Start MongoDB session for transaction support (ensures data consistency)
@@ -725,8 +717,24 @@ const completeProfile = async (req: AuthenticatedRequest, res: Response, next: N
                     return;
           }
         }
+
+        const completedProfile = await UserModel.findByIdAndUpdate(
+          userId,
+          profileDataUpdate,
+          {
+            new: true,
+            runValidators: true
+          }
+        ).select("-password");
+
+        res.status(200).json({
+          success: true,
+          message: "Profile completed successfully. Please proceed to booking of appointment",
+          user: completedProfile
+        })
   } catch (error) {
-    
+    console.error("Complete profile error:", error);
+        next(error);
   }
 }
 
