@@ -700,7 +700,31 @@ const completeProfile = async (req: AuthenticatedRequest, res: Response, next: N
         if (password) profileDataUpdate.password = password;
 
         // Handle Image Upload to cloudinary
-        
+        if(imageFile) {
+          try {
+            // convert image to base64
+          const storedImage = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+
+          // Upload to cloudinary
+          const result = await cloudinary.uploader.upload(storedImage, {
+            folder: "user-profile",
+            resource_type: "auto",
+            transformation: [
+              {width: 500, height: 500, crop: "fill", gravity: "face"},
+              { quality: "auto-good"}
+            ]
+          })
+
+          profileDataUpdate.image = result.secure_url
+          } catch (uploadError) {
+            console.error("Image upload error:", uploadError);
+                    res.status(500).json({
+                      success: false,
+                      message: "Failed to upload image"
+                    });
+                    return;
+          }
+        }
   } catch (error) {
     
   }

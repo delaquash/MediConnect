@@ -35,4 +35,5 @@ export interface IProfileUpdateData {
   phone: string | null;
   profileComplete: boolean;
   profileCompletedAt: Date | null;
+  image?: string;
 }
