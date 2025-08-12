@@ -2,20 +2,29 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { isLowercase } from "validator";
 
-interface IUser {
-    name: string;
-    email: string;
-    password: string;
-    image: string;
-    address:{
-        line1: string;
-        line2: string;
-    };
-    gender: string;
-    dob: string;
-    phone: string;
+export interface IUser {
+name: string;
+  email: string;
+  password: string;
+  image: string;
+  address: {
+    line1: string;
+    line2: string;
+  };
+  gender: 'Male' | 'Female' | 'Other' | null;
+  dob: Date | null;
+  phone: string | null;
+  profileComplete: boolean;
+  profileCompletedAt: Date | null;
+  isActive: boolean;
+  isEmailVerified: boolean;
+  emailVerificationToken: string | null;
+  passwordResetToken: string | null;
+  passwordResetExpires: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLogin: Date | null;
 }
-
 
 const UserSchema = new mongoose.Schema({
   name: { 
@@ -175,7 +184,7 @@ UserSchema.pre("save", async function (next) {
 UserSchema.methods.checkProfileCompletion = function() {
   const requiredFields = ['phone', 'address.line1', 'gender', 'dob'];
   const isComplete = requiredFields.every(field => {
-    const value = field.split('.').reduce((obj, key) => obj?.[key], this);
+    const value = field.split('.').reduce((obj, key) => obj?.[key], this as any);
     return value !== null && value !== undefined && value !== '';
   });
   
