@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import UserModel from '../model/userModel';
+import UserModel, { IUser } from '../model/userModel';
 import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
@@ -11,6 +11,10 @@ import mongoose from 'mongoose';
 import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedRequest } from '../types/global';
 import { validateProfileData } from '../helper/validateProfileData';
+import { IProfileUpdateData } from '../types/type';
+
+// interface 
+
 
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
    try {
@@ -680,9 +684,23 @@ const completeProfile = async (req: AuthenticatedRequest, res: Response, next: N
     }
 
     // Prepare update data
-    const profileDataUpdate = {
-      
+    const profileDataUpdate: IProfileUpdateData = {
+      name: name.trim(),
+      phone: phone.trim(),
+      address: {
+        line1: address.line1.trime() || "",
+        line2: address.line2.trime() || ""
+      },
+      dob: new Date(dob),
+      profileComplete: true,
+      profileCompletedAt: new Date()
     }
+    
+        if (gender) profileDataUpdate.gender = gender;
+        if (password) profileDataUpdate.password = password;
+
+        // Handle Image Upload to cloudinary
+        
   } catch (error) {
     
   }
