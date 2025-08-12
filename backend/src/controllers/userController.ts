@@ -10,6 +10,7 @@ import { isValidAppointmentDate } from '../utils/appointmentDate';
 import mongoose from 'mongoose';
 import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedRequest } from '../types/global';
+import { validateProfileData } from '../helper/validateProfileData';
 
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
    try {
@@ -633,6 +634,62 @@ const getAvailableSlots = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+
+const completeProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.userId
+    const { name, phone, address, dob, gender, password } = req.body
+    const imageFile = req.file
+
+    // Check if user is authenticated
+    if(!userId){
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated"
+      })
+      return
+    }
+
+    // Validate profile data
+    const errors = validateProfileData({ name, phone, address, dob, gender, password }, true);
+    if(errors && errors.length > 0){
+      res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors
+      })
+      return
+    }
+
+    // Look for the user
+    const user = await UserModel.findById(userId)
+
+    if(!user){
+      res.status(404).json({
+        sucess: false,
+        message: "User does not exist."
+      })
+    }
+
+    if(user?.profileComplete){
+      res.status(400).json({
+        success: false,
+        message: "Profile is already complete. Kindly update profile"
+      })
+      return
+    }
+
+    // Prepare update data
+    const profileDataUpdate = {
+      
+    }
+  } catch (error) {
+    
+  }
+}
+
+const getProfileStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {}
+
 export {
     registerUser,
     loginUser,
@@ -641,4 +698,6 @@ export {
     bookAppointment,
     listAppointment,
     cancelAppointment,
+    completeProfile,
+    getProfileStatus
 }

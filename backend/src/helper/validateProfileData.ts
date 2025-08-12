@@ -1,4 +1,6 @@
-const validateProfileData = (data: any, isRequired = false) => {
+import validator from "validator";
+
+export const validateProfileData = (data: any, isRequired = false) => {
   const errors: string[] = [];
 
   // Name validation - check if provided or required
