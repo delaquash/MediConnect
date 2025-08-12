@@ -15,9 +15,9 @@ import { IProfileUpdateData } from '../types/type';
 
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
    try {
-     const {name, email, password, image, address, gender, dob, phone  } = req.body
+     const {name, email, password } = req.body
 
-    if (!name || !email || !password || !address || !image || !gender || !dob || !phone) {
+    if (!name || !email || !password ) {
         res.status(400).json({
             success: false,
             message: "Please fill all fields"
@@ -25,11 +25,24 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
         return;
     }
 
-    if (!validator.isEmail(email)) {
+     const trimmedName = name.trim();
+     const trimmedEmail = email.trim().toLowerCase();
+     const trimmedPassword = password.trim();
+
+
+     if (trimmedName.length < 2 || trimmedName.length > 50) {
+        res.status(400).json({
+            success: false,
+            message: "Name must be at least 2 characters long and less than 50 characters"
+        });
+        return;
+     }
+
+    if (!validator.isEmail(trimmedEmail)) {
                 res.status(400).json({ message: "Invalid email format" })
                 return; 
             }
-            if (!validator.isStrongPassword(password, {
+            if (!validator.isStrongPassword(trimmedPassword, {
                 minLength: 8,
                 minLowercase: 1,
                 minUppercase: 1,
@@ -43,7 +56,7 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
             }
 
               // Check if user already exists
-                const existingUser = await UserModel.findOne({ email });
+                const existingUser = await UserModel.findOne({ email: trimmedEmail });
                 if (existingUser) {
                     res.status(409).json({
                         success: false,
@@ -52,32 +65,23 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
                     return;
                 }
 
-
-            let uploadedImage: string ;
-            // ✅ Add file validation
-             if (req.file) {
-                // File upload - upload to Cloudinary
-                const fileStr = `data:${req.file?.mimetype};base64,${req.file?.buffer?.toString('base64')}`;
-                const result = await cloudinary.uploader.upload(fileStr, {
-                    folder: 'uploads',
-                    resource_type: 'auto',
-                });
-                uploadedImage = result.secure_url;
-            } else if (image) {
-                // Image URL provided
-                uploadedImage = image;
-            } else {
-                res.status(400).json({ message: "Doctor image is required (either upload file or provide image URL)" });
-                return;
-            }
     const user = new UserModel({
-        name,
-        email,
-        password,
-        image: uploadedImage,
-        address,
-        dob,
-        phone
+        name: trimmedName,
+        email: trimmedEmail,
+        password: trimmedPassword,
+
+        // Set defaults for optional fields
+        image: null,
+        address: {
+            line1: "",
+            line2: ""
+        },
+        gender: null,
+        dob: null,
+        phone: null,
+        profileComplete: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
     });
 
     const newRegisteredUser = await user.save();
@@ -90,7 +94,9 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
         address: newRegisteredUser.address,
         gender: newRegisteredUser.gender,
         dob: newRegisteredUser.dob,
-        phone: newRegisteredUser.phone
+        phone: newRegisteredUser.phone,
+        profileComplete: newRegisteredUser.profileComplete,
+        createdAt: newRegisteredUser.createdAt
     };
 
     res.status(201).json({
@@ -247,7 +253,7 @@ const updateProfile = async (req: Request, res: Response, next: NextFunction): P
     const updatedUserTemp = { ...user.toObject(), ...updateData }; // Merge existing + new data
     
     // Check if all required fields are now present
-    const isProfileComplete = ['name', 'phone', 'address.line1', 'dob'].every(field => {
+    const isProfileComplete = ['phone', 'address.line1', 'gender', 'dob'].every(field => {
       const value = field.split('.').reduce((obj, key) => obj?.[key], updatedUserTemp);
       return value !== null && value !== undefined && value !== '';
     });
@@ -401,33 +407,33 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
       // Prepare appointment data object with all required information
 
       const appointmentData = {
-        userId,                              // User ID from authenticated request
-        docId,                               // Doctor ID from request body
-        slotDate,                            // Date of the appointment
-        slotTime,                            // Time of the appointment
-        userData: {                           // User data to be stored in appointment
-          name: user.name,                    // User's name
-          email: user.email,                   // User's email
-          phone: user.phone,                   // User's phone number
-          address: user.address                // User's address
+        userId,                              
+        docId,                               
+        slotDate,                            
+        slotTime,                            
+        userData: {                          
+          name: user.name,                  
+          email: user.email,                
+          phone: user.phone,                
+          address: user.address             
         },
-        docData: {                            // Doctor data to be stored in appointment
-          name: doctor.name,           // Doctor's name
-          specialty: doctor.specialty,              // Doctor's specialty
-          degree: doctor.degree,                  // Doctor's degree    
-          fees: doctor.fees                     // Doctor's consultation fees
+        docData: {                         
+          name: doctor.name,           
+          specialty: doctor.specialty,      
+          degree: doctor.degree,            
+          fees: doctor.fees                 
         },
-        amount: doctor.fees,                  // Appointment fee based on doctor's fees
-        date: Date.now(),                     // Current timestamp for appointment creation
-        cancelled: false,                     // Initially not cancelled
-        payment: false,                       // Initially not paid
-        isCompleted: false                    // Initially not completed
+        amount: doctor.fees,               
+        date: Date.now(),                  
+        cancelled: false,                    
+        payment: false,                      
+        isCompleted: false                   
       }
 
 
-      // Create new appointment document with prepared data
+
       const newAppointment = new AppointmentModel(appointmentData);
-      // Save appointment to database within transaction
+
       await newAppointment.save({ session });
 
       // Create copy of doctor's existing booked slots to avoid mutation
@@ -439,53 +445,50 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
       // Add the newly booked time slot to the date's array
       updatedBookedSlots[slotDate].push(slotTime);
       
-      // Update doctor document with new booked slots within transaction
+
       await DoctorModel.findByIdAndUpdate(
-        docId,                               // Find doctor by ID
-        { slots_booked: updatedBookedSlots }, // Update slots_booked field
-        { session }                          // Include in transaction
+        docId,                               
+        { slots_booked: updatedBookedSlots },
+        { session }                          
       );
-       // Send successful response with appointment details
-      res.status(201).json({                 // 201 Created status for successful creation
+       // Send successful response with appoi
+      res.status(201).json({                 
         success: true,
         message: "Appointment booked successfully",
-        appointment: {                       // Return appointment summary
-          appointmentId: newAppointment._id, // MongoDB-generated appointment ID
-          doctorName: doctor.name,           // Doctor's name for confirmation
-          speciality: doctor.specialty,     // Doctor's specialty for confirmation
-          slotDate,                          // Booked date for confirmation
-          slotTime,                          // Booked time for confirmation
-          fees: doctor.fees,                 // Amount to be paid
-          status: "confirmed"                // Appointment status
+        appointment: {                       
+          appointmentId: newAppointment._id, 
+          doctorName: doctor.name,           
+          speciality: doctor.specialty,     
+          slotDate,                          
+          slotTime,                          
+          fees: doctor.fees,                 
+          status: "confirmed"                
         }
       });
     }) 
   } catch (error: any) {
-    // Log error details for debugging purposes
+
     console.error("Book appointment error:", error);
     
-    // Handle specific MongoDB validation errors
+
     if (error.name === 'ValidationError') {
-      res.status(400).json({                 // 400 Bad Request for validation issues
+      res.status(400).json({                 
         success: false,
         message: "Validation error: Please check your input data"
       });
       return;
     }
     
-    // Handle MongoDB ObjectId casting errors
     if (error.name === 'CastError') {
-      res.status(400).json({                 // 400 Bad Request for casting issues
+      res.status(400).json({                 
         success: false,
         message: "Invalid ID format"
       });
       return;
     }
     
-    // Pass unhandled errors to Express error middleware
     next(error);
   } finally {
-    // Always end the MongoDB session to prevent memory leaks
     await session.endSession();
   }
 }
@@ -494,13 +497,13 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
 const listAppointment= async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
   try {
     const { userId } = req.body;
-     // Validate that user ID and doctor ID are valid MongoDB ObjectIds
+
      if(!mongoose.Types.ObjectId.isValid(userId)){
         res.status(400).json({
             success: false,
             message: "Invalid user ID"
         });
-        return;                         // Reject invalid dates
+        return;                        
      }
      const userAppointment = await appointmentModel.find({ userId });
      res.status(200).json({
@@ -514,7 +517,7 @@ const listAppointment= async(req: Request, res: Response, next: NextFunction): P
 }
 
 
-// Cancel an existing appointment
+
 const cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   // Start MongoDB session for transaction support
   const session = await mongoose.startSession();
@@ -522,17 +525,23 @@ const cancelAppointment = async (req: Request, res: Response, next: NextFunction
   try {
     // Execute cancellation within transaction
     await session.withTransaction(async () => {
-      // Get authenticated user ID from middleware
       const userId = req.userId;
-      // Get appointment ID from request body
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: "User not authenticated"
+        });
+        return; 
+      }
+
       const { appointmentId } = req.body;
       
       // Find appointment that belongs to user and is not already cancelled
       const appointment = await AppointmentModel.findOne({
-        _id: appointmentId,                  // Match appointment ID
-        userId,                              // Ensure appointment belongs to authenticated user
-        cancelled: false                     // Only find non-cancelled appointments
-      }).session(session);                   // Include in transaction
+        _id: appointmentId,                  
+        userId,                              
+        cancelled: false                    
+      }).session(session);                   
       
       // Check if appointment exists and is cancellable
       if (!appointment) {
