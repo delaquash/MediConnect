@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express"; // Importing types from Express
 import jwt from "jsonwebtoken"; // Import JWT library for verifying token
 
-// Admin authentication middleware
-
  const authAdmin = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { atoken } = req.headers as { atoken?: string };

@@ -119,8 +119,7 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  
-  // Account status
+
   isActive: {
     type: Boolean,
     default: true
@@ -136,7 +135,7 @@ const UserSchema = new mongoose.Schema({
     default: null
   },
   
-  // Password reset
+
   passwordResetToken: {
     type: String,
     default: null
@@ -147,7 +146,7 @@ const UserSchema = new mongoose.Schema({
     default: null
   },
   
-  // Timestamps
+
   createdAt: {
     type: Date,
     default: Date.now
@@ -163,7 +162,7 @@ const UserSchema = new mongoose.Schema({
     default: null
   }
 }, {
-  timestamps: true, // Automatically manage createdAt and updatedAt
+  timestamps: true, 
 
 });
 
@@ -173,11 +172,11 @@ UserSchema.index({ createdAt: -1 });
 UserSchema.index({ profileComplete: 1 });
 
 UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next(); // skip if password isn't modified
+  if (!this.isModified("password")) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt); // hash the password
+    this.password = await bcrypt.hash(this.password, salt); 
     next();
   } catch (error) {
     next(error as Error);

@@ -35,7 +35,7 @@ const doctorSchema = new Schema<IDoctor>(
     fees: { type: Number, required: true },
     address: { type: Object, required: true },
     date: {type: Date, default: Date.now },
-    // slots_booked will hold the booked slots for each day
+
     slots_booked: { type: Object, default: {} },
   },
   { minimize: false, // Prevents mongoose from removing empty objects
@@ -44,11 +44,11 @@ const doctorSchema = new Schema<IDoctor>(
 );
 
 doctorSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next(); // skip if password isn't modified
+  if (!this.isModified("password")) return next(); 
 
   try {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt); // hash the password
+    this.password = await bcrypt.hash(this.password, salt); 
     next();
   } catch (error) {
     next(error as Error);
@@ -56,7 +56,7 @@ doctorSchema.pre("save", async function (next) {
 });
 
 // to compare password
-// Compare the password
+
 doctorSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean>{
   return await bcrypt.compare(candidatePassword, this.password);
   }
