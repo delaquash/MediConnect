@@ -11,4 +11,62 @@ const validateProfileData = (data: any, isRequired = false) => {
   } else if (isRequired) { // Only required for profile completion
     errors.push("Name is required");
   }
+
+  // Phone number validation
+  if(data.phone !== undefined) {
+    if(!data.phone || !validator.isMobilePhone(data.phone, "any")){
+      errors.push("Please provide a mobile phone number")
+    }
+  } else if(isRequired) {
+    errors.push("Phone number is required")
+  }
+
+  // Address validation
+  if(data.address !== undefined) {
+    if(!data.address || !data.address.line1 || data.address.line1.trim().length < 5) {
+      errors.push("Address line 1 must be atleast 5 characters long")
+    }
+  } else if(isRequired) {
+    errors.push("Address is required")
+  }
+
+  // DOB Validation
+  if(data.dob !== undefined){
+    if(!data.dob){
+      if(isRequired) errors.push("Data is required")
+    } else {
+      const birthDate = new Date(data.dob)
+      const now = new Date();
+      const age = now.getFullYear() - birthDate.getFullYear();
+      
+      // Age must be between 13-120 years for healthcare platform
+      if (isNaN(birthDate.getTime()) || age < 13 || age > 120) {
+        errors.push("Please provide a valid date of birth (age between 13-120 years)");
+      }
+    }
+  } else if (isRequired) { // Required for profile completion
+    errors.push("Date of birth is required");
+  }
+  
+  // Gender validation
+  if(data.gender !== undefined && data.gender !== null){
+    if(!["Male", "Female", "Other"].includes(data.gender)){
+      errors.push("Gender must be Male, Female, or Other")
+    } 
+  }
+
+  // Password Validation
+  if(data.password !== undefined) {
+    if(!validator.isStrongPassword(data.password, {
+      minLength: 8,
+      minLowercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+      minUppercase: 1
+    })) {
+      errors.push("Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols");
+    }
+
+    return errors
+  }
 }
