@@ -36,7 +36,6 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
         let uploadedImage: string ;
         // ✅ Add file validation
          if (req.file) {
-            // File upload - upload to Cloudinary
             const fileStr = `data:${req.file.mimetype};base64,${req?.file?.buffer?.toString('base64')}`;
             const result = await cloudinary.uploader.upload(fileStr, {
                 folder: 'uploads',
@@ -82,13 +81,10 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
     try {
         const { email, password } = req.body;
 
-        // Validate credentials
         if(process.env.ADMIN_EMAIL !== email || process.env.ADMIN_PASSWORD !== password) {
             res.status(401).json({ success: false, message: "Invalid email or password" });
             return;
         }
-
-        // Generate JWT token
         const token = jwt.sign(
             { 
                 email: process.env.ADMIN_EMAIL, 
@@ -110,13 +106,9 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
 }
 
 const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-
-    console.log("🔍 allDoctors route hit!"); // Add this line
     
     try {
-        const doctors = await DoctorModel.find({}).select("-password").sort({ date: -1 });
-        
-        console.log("📊 Found doctors:", doctors.length); // Add this too
+        const doctors = await DoctorModel.find({}).select("-password").sort({ date: -1 })
         
         res.status(200).json({
             success: true,
@@ -133,36 +125,30 @@ const allDoctors = async (req: Request, res: Response, next: NextFunction): Prom
 const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const adminAppointment = await AppointmentModel
-        .find({})  // this is to get all the information about the appointment
-        .populate("userId", "name, phone, email, dob") // Get patient details such as name
+        .find({})  
+        .populate("userId", "name, phone, email, dob") 
         .populate("docId", "name, phone, specialty")
-        .sort({ date: -1 })  // Sort by date  i.e latest date
-        // Send successful response with all appointments data
+        .sort({ date: -1 })  
     res.status(200).json({ 
       success: true, 
-      adminAppointment // Return the appointments array directly
+      adminAppointment 
     });
 
   } catch (error: any) {
-    // Log error details for debugging purposes
     console.error("Admin appointments error:", error);
-    
-    // Send error response to client with error message
     res.status(500).json({ 
       success: false, 
-      message: error.message // Include actual error message for troubleshooting
+      message: error.message 
     });
 }
 }
 
 const appointmentCancel = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
-     // Start database transaction to ensure all operations succeed or fail together
         const session = await mongoose.startSession();
     try {
        
         const { appointmentId, cancellationReason } = req.body
 
-        // check if an appointment ID was provided
         if(!appointmentId){
             res.status(400).json({
                 success: false,
@@ -170,8 +156,6 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
             })
             return;
         }
-
-           // Validate that the appointment ID is a valid MongoDB ObjectId format
       if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
         res.status(400).json({
           success: false,
@@ -179,8 +163,6 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
         });
         return;
       }
-
-         // Find the appointment and populate patient and doctor details
          const appointment = await AppointmentModel
             .findById(appointmentId)
             .populate("userId","name, email, dob")
@@ -195,7 +177,6 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
         return;
       }
       
-      // Prevent cancelling an appointment that's already been cancelled
       if (appointment.cancelled) {
         res.status(400).json({
           success: false,
@@ -204,70 +185,64 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
         return;
       }
 
-      // STEP 1: Update the appointment record to mark it as cancelled
       const appointmentUpdate = await AppointmentModel.findByIdAndUpdate(
         appointmentId, 
         {
             cancelled: true,
             cancelledBy: "admin",
-            cancellationReason: cancellationReason || 'Cancelled by admin', // Store reason or default message
-            cancelledAt: new Date() // Record the exact time of cancellation
+            cancellationReason: cancellationReason || 'Cancelled by admin', 
+            cancelledAt: new Date() 
         },
-        { session, new: true } // Use transaction and return updated document
+        { session, new: true } 
       )
 
-      // STEP 2: Free up the doctor's time slot so it becomes available again
+   
       const doctor = await DoctorModel.findById(appointment.docId._id).session(session);
       if (doctor) {
-        // Create a copy of the doctor's current booked slots
+        
         const updatedSlots = { ...doctor.slots_booked };
         
-        // Get the array of time slots for the appointment date
         const dateSlots = updatedSlots[appointment.slotDate] || [];
         
-        // Remove the cancelled appointment's time slot from the array
         updatedSlots[appointment.slotDate] = dateSlots.filter((slot: string) => slot !== appointment.slotTime);
-        
-        // If no more slots exist for this date, remove the date entry completely
+
         if (updatedSlots[appointment.slotDate].length === 0) {
           delete updatedSlots[appointment.slotDate];
         }
         
-        // Update the doctor's record with the freed-up slots
         await DoctorModel.findByIdAndUpdate(
           appointment.docId._id,
           { slots_booked: updatedSlots },
-          { session } // Use the same transaction session
+          { session } 
         );
       }
-      // STEP 3: Send success response with comprehensive information about the cancellation
+
       res.status(200).json({
         success: true,
         message: "Appointment cancelled successfully by admin",
         data: {
           appointmentId: appointmentUpdate?.id, // ID of the cancelled appointment
           cancellationDetails: {
-            cancelledBy: 'admin', // Who performed the cancellation
-            cancelledAt: appointmentUpdate?.cancelledAt, // When it was cancelled
-            reason: appointmentUpdate?.cancellationReason // Why it was cancelled
+            cancelledBy: 'admin', 
+            cancelledAt: appointmentUpdate?.cancelledAt, 
+            reason: appointmentUpdate?.cancellationReason 
           },
           affectedParties: {
-            patient: appointment.userId?.name, // Patient who was affected
-            doctor: appointment.docId.name // Doctor who was affected
+            patient: appointment.userId?.name, 
+            doctor: appointment.docId.name 
           },
           slotFreed: {
-            date: appointment.slotDate, // Date that became available again
-            time: appointment.slotTime // Time that became available again
+            date: appointment.slotDate, 
+            time: appointment.slotTime 
           }
         }
       });
     ;
     
   } catch (error: any) {
-    // Log the error for debugging purposes
+
     console.error("Admin cancel appointment error:", error);
     
-    // Handle validation errors (invalid data format, missing required fields)
     if (error.name === 'ValidationError') {
       res.status(400).json({
         success: false,
@@ -276,7 +251,6 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
       return;
     }
     
-    // Handle database casting errors (invalid ObjectId format)
     if (error.name === 'CastError') {
       res.status(400).json({
         success: false,
@@ -285,14 +259,12 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
       return;
     }
     
-    // Generic error response for any other unexpected errors
     res.status(500).json({
       success: false,
       message: "Failed to cancel appointment"
     });
     
   } finally {
-    // Always close the database session, whether operation succeeded or failed
     await session.endSession();
 
   }
@@ -301,66 +273,60 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
 
 const adminDashboard = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Get all counts in parallel for better performance (runs simultaneously instead of sequentially)
+    
     const [doctors, users, appointments] = await Promise.all([
-      DoctorModel.find({}), // Get all doctors from database
-      UserModel.find({}), // Get all users/patients from database  
-      appointmentModel.find({}) // Get all appointments from database
-        .populate('userId', 'name email phone') // Include patient details in appointment data
-        .populate('docId', 'name speciality') // Include doctor details in appointment data
-        .sort({ date: -1 }) // Sort by creation date, newest first
+      DoctorModel.find({}), 
+      UserModel.find({}),  
+      appointmentModel.find({}) 
+        .populate('userId', 'name email phone') 
+        .populate('docId', 'name speciality') 
+        .sort({ date: -1 }) 
     ]);
-    // Calculate total revenue from completed or paid appointments
+
     let totalRevenue = 0;
     appointments.forEach((appointment) => {
-      // Only count revenue if appointment is completed OR payment is confirmed
       if (appointment.isCompleted || appointment.payment) {
-        totalRevenue += appointment.amount; // Add appointment fee to total revenue
+        totalRevenue += appointment.amount; 
       }
     });
 
     // Filter appointments by status for better dashboard metrics
-    const completedAppointments = appointments.filter(apt => apt.isCompleted); // Finished appointments
-    const cancelledAppointments = appointments.filter(apt => apt.cancelled); // Cancelled appointments
-    const pendingAppointments = appointments.filter(apt => !apt.isCompleted && !apt.cancelled); // Upcoming appointments
+    const completedAppointments = appointments.filter(apt => apt.isCompleted); 
+    const cancelledAppointments = appointments.filter(apt => apt.cancelled); 
+    const pendingAppointments = appointments.filter(apt => !apt.isCompleted && !apt.cancelled); 
 
-    // Get today's date for filtering today's appointments
-    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0]; 
     const todaysAppointments = appointments.filter(apt => apt.slotDate === today && !apt.cancelled);
 
-    // Get the 5 most recent appointments for quick admin overview
     const latestAppointments = appointments
-      .slice(0, 5) // Take first 5 (already sorted by date desc)
+      .slice(0, 5) 
       .map(apt => ({
         appointmentId: apt._id,
-        patientName: apt.userData?.name || 'Unknown Patient', // Handle case where patient data might be missing
-        doctorName: apt.docId?.name || 'Unknown Doctor', // Handle case where doctor data might be missing
+        patientName: apt.userData?.name || 'Unknown Patient', 
+        doctorName: apt.docId?.name || 'Unknown Doctor', 
         doctorSpeciality: apt.docId?.speciality || 'N/A',
         appointmentDate: apt.slotDate,
         appointmentTime: apt.slotTime,
         amount: apt.amount,
-        status: apt.isCompleted ? 'completed' : apt.cancelled ? 'cancelled' : 'pending', // Determine status
-        paymentStatus: apt.payment ? 'paid' : 'pending' // Check if payment is made
+        status: apt.isCompleted ? 'completed' : apt.cancelled ? 'cancelled' : 'pending', 
+        paymentStatus: apt.payment ? 'paid' : 'pending' 
       }));
 
-    // Get unique patient count using Set to avoid duplicates
+
     const uniquePatients = new Set<string>();
     appointments.forEach((appointment) => {
-      uniquePatients.add(appointment.userId.toString()); // Add patient ID to set (automatically handles duplicates)
+      uniquePatients.add(appointment.userId.toString()); 
     });
 
-    // Prepare comprehensive dashboard data object
+
     const dashData = {
-      // Basic counts
       totalDoctors: doctors.length,
-      totalPatients: users.length, // Total registered users/patients
+      totalPatients: users.length, 
       totalAppointments: appointments.length,
-      uniquePatients: uniquePatients.size, // Actual number of patients who booked appointments
+      uniquePatients: uniquePatients.size, 
       
-      // Financial data
       totalRevenue,
-      
-      // Appointment breakdown by status
+    
       appointmentStats: {
         completed: completedAppointments.length,
         cancelled: cancelledAppointments.length,
@@ -373,12 +339,11 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
       
       // Quick stats for admin decision making
       doctorAvailability: {
-        availableDoctors: doctors.filter(doc => doc.available).length, // Doctors currently accepting appointments
-        unavailableDoctors: doctors.filter(doc => !doc.available).length // Doctors not accepting new appointments
+        availableDoctors: doctors.filter(doc => doc.available).length, 
+        unavailableDoctors: doctors.filter(doc => !doc.available).length 
       }
     };
 
-    // Send successful response with dashboard data
     res.status(200).json({ 
       success: true, 
       message: "Admin dashboard data retrieved successfully",
@@ -386,10 +351,8 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
     });
 
   } catch (error: any) {
-    // Log error details for debugging
     console.error("Admin dashboard error:", error);
-    
-    // Handle different types of errors appropriately
+
     if (error.name === 'CastError') {
       res.status(400).json({
         success: false,
@@ -398,7 +361,6 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
       return;
     }
 
-    // Generic error response for unexpected errors
     res.status(500).json({ 
       success: false, 
       message: "Failed to load dashboard data" 
