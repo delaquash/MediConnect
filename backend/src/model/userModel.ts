@@ -18,7 +18,9 @@ name: string;
   profileCompletedAt: Date | null;
   isActive: boolean;
   isEmailVerified: boolean;
-  emailVerificationToken: string | null;
+  emailVerificationOTP?: string | null;         
+  emailVerificationOTPExpires?: Date | null;    
+  emailVerificationOTPAttempts?: number;        
   passwordResetToken: string | null;
   passwordResetExpires: Date | null;
   createdAt: Date;
@@ -110,6 +112,18 @@ const UserSchema = new mongoose.Schema({
       message: "Please provide a valid phone number"
     }
   },
+  emailVerificationOTP: { 
+    type: String, 
+    default: null 
+  },
+    emailVerificationOTPExpires: { 
+      type: Date, 
+      default: null 
+    },
+    emailVerificationOTPAttempts: { 
+      type: Number, 
+      default: 0 
+    },
   profileComplete: {
     type: Boolean,
     default: false
