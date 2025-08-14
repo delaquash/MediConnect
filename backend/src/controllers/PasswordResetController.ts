@@ -2,9 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import validator from 'validator';
 import UserModel from '../model/userModel';
 import DoctorModel from '../model/doctorModel'
-import { createSecureToken, hashValue } from '../utils/token';
+import { createOTp, createSecureToken, hashValue } from '../utils/token';
 import EmailService from '../services/emailService';
 
+// Request Password Reset for User
 const requestUserPasswordReset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { email } = req.body;
@@ -306,13 +307,20 @@ const resendVerificationOTP = async (req: Request, res: Response, next: NextFunc
             return;
         }
 
-        const Model = userType === 'doctor' ? DoctorModel : UserModel;
-
-        // Find unverified user/doctor (for OTP resend during registration)
-        const user = await Model.findOne({ 
-            email: trimmedEmail,
-            isEmailVerified: false 
-        });
+        // Handle users and doctors separately to avoid TypeScript union issues
+        let user: any;
+        
+        if (userType === 'doctor') {
+            user = await DoctorModel.findOne({ 
+                email: trimmedEmail,
+                isEmailVerified: false 
+            });
+        } else {
+            user = await UserModel.findOne({ 
+                email: trimmedEmail,
+                isEmailVerified: false 
+            });
+        }
 
         if (!user) {
             res.status(404).json({
@@ -323,7 +331,7 @@ const resendVerificationOTP = async (req: Request, res: Response, next: NextFunc
         }
 
         // Generate new OTP
-        const { code: otp, hash: otpHash } = createOTP(6);
+        const {  otp, hash: otpHash } = createOTp(6);
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         // Update user with new OTP hash
@@ -380,13 +388,21 @@ const verifyResetToken = async (req: Request, res: Response, next: NextFunction)
 
         // Hash the token to compare
         const tokenHash = hashValue(token);
-        const Model = userType === 'doctor' ? DoctorModel : UserModel;
-
-        // Check if token exists and is valid
-        const user = await Model.findOne({
-            passwordResetToken: tokenHash,
-            passwordResetExpires: { $gt: new Date() }
-        });
+        
+        // Handle users and doctors separately
+        let user: any;
+        
+        if (userType === 'doctor') {
+            user = await DoctorModel.findOne({
+                passwordResetToken: tokenHash,
+                passwordResetExpires: { $gt: new Date() }
+            });
+        } else {
+            user = await UserModel.findOne({
+                passwordResetToken: tokenHash,
+                passwordResetExpires: { $gt: new Date() }
+            });
+        }
 
         if (!user) {
             res.status(400).json({
