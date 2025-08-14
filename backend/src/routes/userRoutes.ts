@@ -8,7 +8,8 @@ import {
   listAppointment,
   cancelAppointment,
   completeProfile,
-  getProfileStatus
+  getProfileStatus,
+  verifyUserOTP
 } from "../controllers/userController";
 import authUser from "../middlewares/authUser";
 import upload from "../middlewares/multer";
@@ -16,6 +17,7 @@ import upload from "../middlewares/multer";
 const userRouter = express.Router();
 
 userRouter.post("/register", registerUser);
+userRouter.post("/verify-otp", authUser, verifyUserOTP)
 userRouter.post("/login", loginUser);
 
 userRouter.get("/get-profile", authUser, getProfile);

@@ -12,6 +12,8 @@ import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedRequest } from '../types/global';
 import { validateProfileData } from '../helper/validateProfileData';
 import { IProfileUpdateData } from '../types/type';
+import { createOTp, hashValue } from '../utils/token';
+import EmailService from '../services/emailService';
 
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
    try {
@@ -29,7 +31,6 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
      const trimmedEmail = email.trim().toLowerCase();
      const trimmedPassword = password.trim();
 
-
      if (trimmedName.length < 2 || trimmedName.length > 50) {
         res.status(400).json({
             success: false,
@@ -39,38 +40,45 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
      }
 
     if (!validator.isEmail(trimmedEmail)) {
-                res.status(400).json({ message: "Invalid email format" })
-                return; 
-            }
-            if (!validator.isStrongPassword(trimmedPassword, {
-                minLength: 8,
-                minLowercase: 1,
-                minUppercase: 1,
-                minNumbers: 1,
-                minSymbols: 1,
-            })) {
-                res.status(400).json({
-                    message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
-                });
-                return; // 
-            }
+        res.status(400).json({ 
+            success: false, // ✅ Added missing success field
+            message: "Invalid email format" 
+        });
+        return; 
+    }
+    
+    if (!validator.isStrongPassword(trimmedPassword, {
+        minLength: 8,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1,
+    })) {
+        res.status(400).json({
+            success: false, // ✅ Added missing success field
+            message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
+        });
+        return;
+    }
 
-              // Check if user already exists
-                const existingUser = await UserModel.findOne({ email: trimmedEmail });
-                if (existingUser) {
-                    res.status(409).json({
-                        success: false,
-                        message: "User already exists with this email"
-                    });
-                    return;
-                }
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email: trimmedEmail });
+    if (existingUser) {
+        res.status(409).json({
+            success: false,
+            message: "User already exists with this email"
+        });
+        return;
+    }
+
+    // Generate OTP and time for token to expire
+    const { otp, hash: otpHash } = createOTp(6); // ✅ Fixed function name and destructuring
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const user = new UserModel({
         name: trimmedName,
         email: trimmedEmail,
         password: trimmedPassword,
-
-        // Set defaults for optional fields
         image: null,
         address: {
             line1: "",
@@ -80,36 +88,83 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
         dob: null,
         phone: null,
         profileComplete: false,
+        isEmailVerified: false, 
+        emailVerificationToken: otpHash,
+        passwordResetExpires: otpExpiry, 
         createdAt: new Date(),
         updatedAt: new Date()
     });
 
     const newRegisteredUser = await user.save();
 
-       const userResponse = {
-        _id: newRegisteredUser._id,
-        name: newRegisteredUser.name,
-        email: newRegisteredUser.email,
-        image: newRegisteredUser.image,
-        address: newRegisteredUser.address,
-        gender: newRegisteredUser.gender,
-        dob: newRegisteredUser.dob,
-        phone: newRegisteredUser.phone,
-        profileComplete: newRegisteredUser.profileComplete,
-        createdAt: newRegisteredUser.createdAt
-    };
+    // Send Email OTP
+    const sendEmailVerification = await EmailService.sendVerificationOTP(
+        trimmedEmail,
+        otp,
+        "user"
+    );
 
+    if (!sendEmailVerification) {
+        // Clean up - delete user if email fails
+        await UserModel.findByIdAndDelete(newRegisteredUser._id);
+        res.status(500).json({
+            success: false,
+            message: "Failed to send verification email. Please try again."
+        });
+        return;
+    }
+
+    // ✅ Simplified response - only send essential data
     res.status(201).json({
         success: true,
-        message: "User registered successfully",
-        userResponse
+        message: "Registration successful! Please check your email for verification code.",
+        userId: newRegisteredUser._id,
+        email: trimmedEmail,
+        name: trimmedName
     });
+
    } catch (error) {
+        console.error("Registration error:", error); // ✅ Add logging
         next(error);
     }
-    
 }
+
+const verifyUserOTP = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { email, otp } = req.body;
         
+        const otpHash = hashValue(otp);
+        
+        const user = await UserModel.findOne({
+            email: email.trim().toLowerCase(),
+            emailVerificationToken: otpHash,
+            passwordResetExpires: { $gt: new Date() },
+            isEmailVerified: false
+        });
+        
+        if (!user) {
+            res.status(400).json({
+                success: false,
+                message: "Invalid or expired verification code"
+            });
+            return;
+        }
+        
+        user.isEmailVerified = true;
+        user.emailVerificationOTP = null;
+        user.passwordResetExpires = null;
+        await user.save();
+        
+        res.status(200).json({
+            success: true,
+            message: "Email verified successfully!"
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
 const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { email, password } = req.body;
@@ -741,5 +796,6 @@ export {
     listAppointment,
     cancelAppointment,
     completeProfile,
-    getProfileStatus
+    getProfileStatus,
+    verifyUserOTP
 }
