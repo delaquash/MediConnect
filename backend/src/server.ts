@@ -1,12 +1,12 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import express, { Request, Response } from 'express';
 import cors from "cors";
-import connectDB from "./config/database";
+import {connectDB }from "./config/database";
 import connectCloudinary from "./config/cloudinary";
 import adminRouter from "./routes/adminRouter";
 import doctorRouter from "./routes/doctorRoutes";
 import userRouter from "./routes/userRoutes";
-
+dotenv.config();
 // app config
 const app = express();
 const port = process.env.PORT || 5000;
