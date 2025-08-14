@@ -114,7 +114,6 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
         return;
     }
 
-    // ✅ Simplified response - only send essential data
     res.status(201).json({
         success: true,
         message: "Registration successful! Please check your email for verification code.",

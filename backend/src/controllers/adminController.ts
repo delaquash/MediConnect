@@ -7,17 +7,20 @@ import AppointmentModel from '../model/appointmentModel';
 import mongoose from 'mongoose';
 import UserModel from '../model/userModel';
 import appointmentModel from '../model/appointmentModel';
+import { createOTp } from '../utils/token';
+import EmailService from '../services/emailService';
 
 const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { name, email, password, image, specialty, degree, experience, about, available, fees, address, slots_booked } = req.body as IDoctor;
+        const { name, email, password,  } = req.body;
         
-        if(!name || !email || !password || !image || !specialty || !degree || !experience || !about || !fees || !address || !slots_booked) {
+        if(!name || !email || !password ) {
             res.status(400).json({ message: "All fields are required" })
             return; 
         }
+        const trimmedEmail = email.trim().toLowerCase();
 
-        if (!validator.isEmail(email)) {
+        if (!validator.isEmail(trimmedEmail)) {
             res.status(400).json({ message: "Invalid email format" })
             return; 
         }
@@ -33,45 +36,74 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
             });
             return; // 
         }
-        let uploadedImage: string ;
-        // ✅ Add file validation
-         if (req.file) {
-            const fileStr = `data:${req.file.mimetype};base64,${req?.file?.buffer?.toString('base64')}`;
-            const result = await cloudinary.uploader.upload(fileStr, {
-                folder: 'uploads',
-                resource_type: 'auto',
-            });
-            uploadedImage = result.secure_url;
-        } else if (image) {
-            // Image URL provided
-            uploadedImage = image;
-        } else {
-            res.status(400).json({ message: "Doctor image is required (either upload file or provide image URL)" });
-            return;
+        // let uploadedImage: string ;
+        // // ✅ Add file validation
+        //  if (req.file) {
+        //     const fileStr = `data:${req.file.mimetype};base64,${req?.file?.buffer?.toString('base64')}`;
+        //     const result = await cloudinary.uploader.upload(fileStr, {
+        //         folder: 'uploads',
+        //         resource_type: 'auto',
+        //     });
+        //     uploadedImage = result.secure_url;
+        // } else if (image) {
+        //     // Image URL provided
+        //     uploadedImage = image;
+        // } else {
+        //     res.status(400).json({ message: "Doctor image is required (either upload file or provide image URL)" });
+        //     return;
+        // }
+
+        const existingDoctor = await DoctorModel.findOne({ email: trimmedEmail });
+        if(existingDoctor){
+          res.status(409).json({
+            success: false,
+            message: "Doctor already exists wit this email"
+          })
+          return;
         }
+        // Generate OTP and time for token to expire
+            const { otp, hash: otpHash } = createOTp(6);
+            const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        
 
         const doctor = new DoctorModel({
-            name,
-            email,
-            password,
-            specialty,
-            degree,
-            experience,
-            image: uploadedImage,
-            about,
-            available,
-            fees,
-            slots_booked,
-            address,
+            name: name.trim(),
+            email: trimmedEmail,
+            password: password.trim(),
+            isEmailVerified: false,
+            emailVerificationToken: otpHash,
+            passwordResetExpires: otpExpiry, // Reuse for OTP expiry
+            createdAt: new Date(),
+            updatedAt: new Date(),
             date: Date.now(),
         });
 
         const SavedDoctor = await doctor.save();
-        res.status(201).json({ 
-            status: "success",
-            message: "Doctor added successfully", 
-            data: SavedDoctor,
-        });
+
+        // send email otp
+        const sendDoctorEmailVerification = await EmailService.sendVerificationOTP(
+          trimmedEmail,
+          otp,
+          "doctor"
+        )
+
+        if(!sendDoctorEmailVerification){
+          await DoctorModel.findByIdAndDelete(SavedDoctor._id)
+          res.status(500).json({
+            success: false,
+            message: "Failed to send verification email. Please try again."
+          });
+          return;
+        }
+
+
+        res.status(201).json({
+        success: true,
+        message: "Registration successful! Please check your email for verification code.",
+        userId: SavedDoctor._id,
+        email: trimmedEmail,
+        name
+    });
     } catch (error: any) {
         next(error);
     } 

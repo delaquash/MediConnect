@@ -19,6 +19,22 @@ export interface IDoctor extends Document {
   slots_booked: {
     [key: string]: any;
   };
+
+  profileComplete: boolean;
+  profileCompletedAt: Date | null;
+  isActive: boolean;
+  isEmailVerified: boolean;
+  emailVerificationOTP?: string | null;         
+  emailVerificationOTPExpires?: Date | null;    
+  emailVerificationOTPAttempts?: number;        
+  passwordResetToken: string | null;
+  passwordResetExpires: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLogin: Date | null;
+
+  checkProfileCompletion(): boolean;
+  comparePassword(candidatePassword: string): Promise<boolean>
 }
 
 const doctorSchema = new Schema<IDoctor>(
