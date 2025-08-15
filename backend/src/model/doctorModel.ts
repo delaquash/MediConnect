@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { profile } from "console";
 import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface IDoctor extends Document {
@@ -58,6 +59,10 @@ const doctorSchema = new Schema<IDoctor>(
     timestamps: true   // Automatically adds createdAt and updatedAt fields
   }, 
 );
+
+
+doctorSchema.index({ createdAt: -1})
+doctorSchema.index({ profileComplete: -1 })
 
 doctorSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next(); 

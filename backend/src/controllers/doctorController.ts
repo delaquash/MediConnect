@@ -501,7 +501,16 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
   }
 };
 
-const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const docId = req.docId
+
+    const {name, phone,  } = req.body;
+
+  } catch (error) {
+    next(error);
+  }
+}
 
 export {
     changeAvailability,
