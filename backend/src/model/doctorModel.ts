@@ -72,7 +72,7 @@ doctorSchema.pre("save", async function (next) {
 });
 // method to check if profile is complete
 doctorSchema.methods.checkProfileCompletion = function (){
-  const requiredFields = ["", "specialty", "degree", "experience", "about", "fees", "address"];
+  const requiredFields = [ "specialty", "degree", "experience", "about", "fees", "address"];
   const isComplete = requiredFields.every(field => {
     const value = field.split(".").reduce((obj, key) => obj && obj[key], this as any);
     return value !== undefined && value !== null && value !== "";

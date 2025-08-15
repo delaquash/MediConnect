@@ -1,7 +1,5 @@
-// services/emailService.ts
 import nodemailer from 'nodemailer';
 import { EmailTemplates } from '../template/emailTemplates';
-
 
 interface EmailOptions {
   to: string;
@@ -22,51 +20,118 @@ class EmailService {
       }
 
       console.log('🔄 Initializing email service...');
+      console.log(`📧 Email User: ${process.env.EMAIL_USER}`);
+      console.log(`🔑 Password length: ${process.env.EMAIL_APP_PASSWORD?.length} characters`);
 
-      // Create transporter with your email provider settings
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_APP_PASSWORD,
+      // Try different SMTP configurations
+      const configs = [
+        // Configuration 1: Gmail with explicit settings
+        {
+          name: 'Gmail SMTP (587)',
+          config: {
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_APP_PASSWORD,
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 5000,
+            socketTimeout: 10000,
+            debug: true,
+            logger: true,
+          }
         },
-        // Add timeout configurations
-        connectionTimeout: 60000, // 60 seconds
-        greetingTimeout: 30000,   // 30 seconds  
-        socketTimeout: 60000,     // 60 seconds
-        // Enable debug for troubleshooting (remove in production)
-        debug: process.env.NODE_ENV === 'development',
-        logger: process.env.NODE_ENV === 'development',
-      });
+        // Configuration 2: Gmail with SSL (465)
+        {
+          name: 'Gmail SMTP (465)',
+          config: {
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_APP_PASSWORD,
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 5000,
+            socketTimeout: 10000,
+            debug: true,
+            logger: true,
+          }
+        },
+        // Configuration 3: Gmail service (original)
+        {
+          name: 'Gmail Service',
+          config: {
+            service: 'gmail',
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_APP_PASSWORD,
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 5000,
+            socketTimeout: 10000,
+            debug: true,
+            logger: true,
+          }
+        }
+      ];
 
-      // Verify connection configuration with timeout
-      const verifyPromise = this.transporter.verify();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Email verification timeout')), 30000)
-      );
+      // Try each configuration
+      for (const { name, config } of configs) {
+        try {
+          console.log(`🔄 Trying ${name}...`);
+          
+          this.transporter = nodemailer.createTransport(config);
 
-      await Promise.race([verifyPromise, timeoutPromise]);
-      
-      this.isInitialized = true;
-      console.log('Email service initialized successfully');
-      console.log(`Using email: ${process.env.EMAIL_USER}`);
+          // Test the connection with a shorter timeout
+          const verifyPromise = this.transporter.verify();
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`${name} verification timeout`)), 15000)
+          );
+
+          await Promise.race([verifyPromise, timeoutPromise]);
+          
+          this.isInitialized = true;
+          console.log(`✅ Email service initialized successfully with ${name}`);
+          console.log(`📧 Using email: ${process.env.EMAIL_USER}`);
+          return; // Success, exit the loop
+          
+        } catch (configError: any) {
+          console.log(`❌ ${name} failed: ${configError.message}`);
+          continue; // Try next configuration
+        }
+      }
+
+      // If we reach here, all configurations failed
+      throw new Error('All SMTP configurations failed');
       
     } catch (error: any) {
       this.isInitialized = false;
-      console.error(' Email service initialization failed:', error.message);
+      console.error('❌ Email service initialization failed:', error.message);
       
       // Provide helpful error messages based on common issues
       if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
-        console.error('    Troubleshooting tips:');
+        console.error('🔍 Connection Timeout Troubleshooting:');
         console.error('   1. Check your internet connection');
-        console.error('   2. Verify Gmail SMTP is accessible from your network');
-        console.error('   3. Check if your firewall/antivirus is blocking port 587/465');
-        console.error('   4. Try using a different network');
+        console.error('   2. Try connecting to Gmail manually in browser');
+        console.error('   3. Check if corporate firewall blocks SMTP (ports 587/465)');
+        console.error('   4. Try running on different network (mobile hotspot)');
+        console.error('   5. Temporarily disable antivirus/firewall');
       } else if (error.message.includes('authentication') || error.code === 535) {
-        console.error('   Authentication issue:');
-        console.error('   1. Verify EMAIL_USER is correct');
-        console.error('   2. Ensure EMAIL_APP_PASSWORD is a Gmail App Password (not regular password)');
-        console.error('   3. Enable 2-factor authentication and generate App Password');
+        console.error('🔍 Authentication Troubleshooting:');
+        console.error('   1. Verify EMAIL_USER is your full Gmail address');
+        console.error('   2. Ensure EMAIL_APP_PASSWORD is 16-character App Password');
+        console.error('   3. Enable 2-factor authentication on Gmail');
+        console.error('   4. Generate new App Password in Gmail settings');
+        console.error('   5. Check if "Less secure app access" is disabled (should be)');
+      } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+        console.error('🔍 Network/DNS Issues:');
+        console.error('   1. Check DNS resolution: ping smtp.gmail.com');
+        console.error('   2. Try different DNS servers (8.8.8.8, 1.1.1.1)');
+        console.error('   3. Check if VPN is interfering');
       }
       
       throw error;
@@ -100,7 +165,7 @@ class EmailService {
       console.log('📧 Email sent successfully:', result.messageId);
       return true;
     } catch (error) {
-      console.error(' Email sending failed:', error);
+      console.error('❌ Email sending failed:', error);
       return false;
     }
   }
@@ -124,10 +189,10 @@ class EmailService {
   }
 
   // Test email function (useful for testing setup)
-  // static async sendTestEmail(email: string): Promise<boolean> {
-  //   const { subject, html } = EmailTemplates.test(email);
-  //   return await this.sendEmail({ to: email, subject, html });
-  // }
+  static async sendTestEmail(email: string): Promise<boolean> {
+    const { subject, html } = EmailTemplates.test(email);
+    return await this.sendEmail({ to: email, subject, html });
+  }
 
   // Test email connection without throwing errors
   static async testConnection(): Promise<boolean> {
@@ -140,6 +205,42 @@ class EmailService {
     } catch (error) {
       console.error('Email connection test failed:', error);
       return false;
+    }
+  }
+
+  // Network connectivity test
+  static async testNetworkConnectivity(): Promise<void> {
+    const net = require('net');
+    
+    const testPorts = [
+      { host: 'smtp.gmail.com', port: 587, name: 'SMTP TLS' },
+      { host: 'smtp.gmail.com', port: 465, name: 'SMTP SSL' },
+    ];
+
+    console.log('🔍 Testing network connectivity...');
+    
+    for (const { host, port, name } of testPorts) {
+      try {
+        await new Promise((resolve, reject) => {
+          const socket = net.createConnection({ host, port, timeout: 5000 });
+          socket.on('connect', () => {
+            console.log(`✅ ${name} (${host}:${port}) - Connected`);
+            socket.destroy();
+            resolve(true);
+          });
+          socket.on('timeout', () => {
+            console.log(`❌ ${name} (${host}:${port}) - Timeout`);
+            socket.destroy();
+            reject(new Error('Timeout'));
+          });
+          socket.on('error', (error: any) => {
+            console.log(`❌ ${name} (${host}:${port}) - Error: ${error.message}`);
+            reject(error);
+          });
+        });
+      } catch (error: any) {
+        console.log(`❌ ${name} connection failed: ${error.message}`);
+      }
     }
   }
 

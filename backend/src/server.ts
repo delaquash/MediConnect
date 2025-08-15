@@ -31,6 +31,39 @@ app.get("/", (req: Request, res: Response) => {
   res.send("API WORKING");
 });
 
+// Email test endpoint
+app.get("/test-email", async (req: Request, res: Response) => {
+  try {
+    // Test network connectivity
+    await EmailService.testNetworkConnectivity();
+    
+    // Test email connection
+    const isConnected = await EmailService.testConnection();
+    
+    if (isConnected && req.query.send === 'true' && req.query.to) {
+      // Send test email if parameters provided
+      const success = await EmailService.sendTestEmail(req.query.to as string);
+      res.json({ 
+        emailService: 'connected',
+        testEmailSent: success,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.json({ 
+        emailService: isConnected ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({ 
+      error: error.message, 
+      emailService: 'failed',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+
 async function startServer() {
   try {
     // Connect to database

@@ -269,41 +269,41 @@ export class EmailTemplates {
     return { subject, html };
   }
 
-  // static test(email: string): { subject: string; html: string } {
-  //   const subject = '🧪 Email Service Test';
-  //   const html = `
-  //     <!DOCTYPE html>
-  //     <html>
-  //       <head>
-  //         <meta charset="utf-8">
-  //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  //         <title>Test Email</title>
-  //         ${this.getBaseStyles()}
-  //         <style>
-  //           .header { background: #6c757d; }
-  //         </style>
-  //       </head>
-  //       <body>
-  //         <div class="container">
-  //           <div class="header">
-  //             <h1>🧪 Email Service Test</h1>
-  //           </div>
-  //           <div class="content">
-  //             <h2>Test Successful!</h2>
-  //             <p>If you're reading this, your email service is working correctly!</p>
-  //             <p><strong>Test Details:</strong></p>
-  //             <ul>
-  //               <li>Recipient: ${email}</li>
-  //               <li>Sent at: ${new Date().toISOString()}</li>
-  //               <li>Service: Working </li>
-  //             </ul>
-  //           </div>
-  //           ${this.getFooter()}
-  //         </div>
-  //       </body>
-  //     </html>
-  //   `;
+  static test(email: string): { subject: string; html: string } {
+    const subject = '🧪 Email Service Test';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Test Email</title>
+          ${this.getBaseStyles()}
+          <style>
+            .header { background: #6c757d; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🧪 Email Service Test</h1>
+            </div>
+            <div class="content">
+              <h2>Test Successful!</h2>
+              <p>If you're reading this, your email service is working correctly!</p>
+              <p><strong>Test Details:</strong></p>
+              <ul>
+                <li>Recipient: ${email}</li>
+                <li>Sent at: ${new Date().toISOString()}</li>
+                <li>Service: Working </li>
+              </ul>
+            </div>
+            ${this.getFooter()}
+          </div>
+        </body>
+      </html>
+    `;
 
-  //   return { subject, html };
-  // }
+    return { subject, html };
+  }
 }
