@@ -70,7 +70,19 @@ doctorSchema.pre("save", async function (next) {
     next(error as Error);
   }
 });
-
+// method to check if profile is complete
+doctorSchema.methods.checkProfileCompletion = function (){
+  const requiredFields = ["", "specialty", "degree", "experience", "about", "fees", "address"];
+  const isComplete = requiredFields.every(field => {
+    const value = field.split(".").reduce((obj, key) => obj && obj[key], this as any);
+    return value !== undefined && value !== null && value !== "";
+  })
+  if(isComplete && !this.profileComplete) {
+    this.profileComplete = true;
+    this.profileCompletedAt = new Date();
+  }
+  return isComplete;
+}
 // to compare password
 
 doctorSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean>{
