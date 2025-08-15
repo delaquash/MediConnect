@@ -6,6 +6,7 @@ import connectCloudinary from "./config/cloudinary";
 import adminRouter from "./routes/adminRouter";
 import doctorRouter from "./routes/doctorRoutes";
 import userRouter from "./routes/userRoutes";
+import EmailService from "./services/emailService";
 dotenv.config();
 // app config
 const app = express();
@@ -30,3 +31,20 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.listen(port, () => console.log("Server started", port));
+
+async function startServer() {
+  try {
+    // Initialize email service when app starts
+    await EmailService.initialize();
+    
+    // Start your Express server
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
