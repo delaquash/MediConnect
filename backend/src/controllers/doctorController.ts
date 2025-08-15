@@ -5,7 +5,8 @@ import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
 import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
-
+import { validateProfileData } from '../helper/validateProfileData';
+import { v2 as cloudinary } from 'cloudinary';
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -504,13 +505,106 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
 const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const docId = req.docId
+    const imageFile = req.file;
+    const {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
 
-    const {name, phone,  } = req.body;
+    if(!docId){
+      res.status(401).json({
+        success: false,
+        message: "Doctor does not exist"
+      });
+      return;
+    }
 
+    const errors = validateProfileData({ name, phone, image, specialty, degree, experience, about, fees, address}, false)
+    if (errors && errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Profile validation failed",
+        errors
+      });
+      return;
+    }
+
+    const doc = await DoctorModel.findById(docId);
+    if(!doc){
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      })
+      return
+    }
+    // image, specialty, degree, experience, about, fees, address } = req.body;
+  const updateDocData: any = {}
+
+  if( name !== undefined) updateDocData.name = name.trim();
+  if(phone !== undefined) updateDocData.phone = phone.trim();
+  if(specialty !== undefined) updateDocData.specialty = specialty.trim();
+  if(degree !== undefined) updateDocData.degree = degree.trim();
+  if(experience !== undefined) updateDocData.experience = experience.trim();
+  if(about !== undefined) updateDocData.about = about.trim();
+  if(fees !== undefined) updateDocData.fees = fees;
+  if(address !== undefined) updateDocData.address = address.trim();
+
+  // cloudinary to handle image upload
+  if (imageFile) {
+        try {
+          
+          const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+        
+          const result = await cloudinary.uploader.upload(fileStr, {
+            folder: 'doctors-profiles',
+            resource_type: 'auto',
+            transformation: [
+              { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+              { quality: 'auto:good' }
+            ]
+          });
+          
+          updateDocData.image = result.secure_url;
+        } catch (uploadError) {
+          console.error("Image upload error:", uploadError);
+          res.status(500).json({
+            success: false,
+            message: "Failed to upload image"
+          });
+          return;
+        }
+      }
+
+      const updatedDocTemp ={ ...doc.toObject(), ...updateDocData}
+
+      // check if all required fields are now present
+      const isProfileComplete = ["image", "specialty", "degree", "experience", "about", "fees", "address"].every(field=>{
+        const value = field.split('.').reduce((obj, key) => obj?.[key], updatedDocTemp);
+        return value !== null && value !== undefined && value !== '';
+      })
+
+      // if profile wasnt complete before, but it is now complete, mark it 
+      if(isProfileComplete && !doc.profileComplete) {
+        updateDocData.profileComplete = true
+        updateDocData.profileCompletedAt = new Date()
+      }
+
+      const updatedDocProfile = await DoctorModel.findByIdAndUpdate(
+        docId,
+        updateDocData,
+        {
+          new: true,
+          runValidators: true
+        }
+      ).select("-password")
+      res.status(200).json({
+      success: true,
+      message: "Doctors Profile updated successfully",
+      user: updatedDocProfile
+    });
   } catch (error) {
     next(error);
   }
 }
+
+const completeDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
 
 export {
     changeAvailability,
