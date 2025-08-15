@@ -26,7 +26,7 @@ class EmailService {
 
       // Verify connection configuration
       await this.transporter.verify();
-      console.log('✅ Email service initialized successfully');
+      console.log(' Email service initialized successfully');
     } catch (error) {
       console.error('❌ Email service initialization failed:', error);
       throw error;
@@ -41,18 +41,17 @@ class EmailService {
 
       const mailOptions = {
         from: {
-          name: process.env.EMAIL_FROM_NAME || 'Your App Name',
+          name: process.env.EMAIL_FROM_NAME || 'Medikonnect',
           address: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER!
         },
         to,
         subject,
         html,
-        // Optional: Add text version for better compatibility
-        text: html.replace(/<[^>]*>/g, ''), // Strip HTML tags for plain text
+        text: html.replace(/<[^>]*>/g, ''), 
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email sent successfully:', result.messageId);
+      console.log(' Email sent successfully:', result.messageId);
       return true;
     } catch (error) {
       console.error('❌ Email sending failed:', error);
@@ -150,7 +149,7 @@ class EmailService {
               </div>
             </div>
             <div class="footer">
-              <p>&copy; 2025 ${process.env.EMAIL_FROM_NAME || 'Your App Name'}. All rights reserved.</p>
+              <p>&copy; 2025 ${process.env.EMAIL_FROM_NAME || 'Medikonnect'}. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -263,7 +262,7 @@ class EmailService {
               </div>
             </div>
             <div class="footer">
-              <p>&copy; 2025 ${process.env.EMAIL_FROM_NAME || 'Your App Name'}. All rights reserved.</p>
+              <p>&copy; 2025 ${process.env.EMAIL_FROM_NAME || 'Medikonnect'}. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -275,7 +274,7 @@ class EmailService {
 
   // Send welcome email after successful verification
   static async sendWelcomeEmail(email: string, name: string, userType: 'user' | 'doctor'): Promise<boolean> {
-    const subject = `🎉 Welcome to Our Platform - ${userType === 'doctor' ? 'Doctor' : 'User'} Account Verified!`;
+    const subject = ` Welcome to Our Platform - ${userType === 'doctor' ? 'Doctor' : 'User'} Account Verified!`;
     
     const html = `
       <!DOCTYPE html>
@@ -346,7 +345,7 @@ class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🎉 Welcome to Our Platform!</h1>
+              <h1> Welcome to Our Platform!</h1>
             </div>
             <div class="content">
               <h2>Hello ${name}! 👋</h2>
@@ -355,11 +354,11 @@ class EmailService {
               <div class="feature-list">
                 <p><strong>You can now:</strong></p>
                 <ul>
-                  <li>✅ Complete your profile</li>
-                  <li>✅ Access all platform features</li>
+                  <li> Complete your profile</li>
+                  <li> Access all platform features</li>
                   ${userType === 'doctor' 
-                    ? '<li>✅ Start managing your practice</li><li>✅ Connect with patients</li>' 
-                    : '<li>✅ Book appointments with doctors</li><li>✅ Access your health dashboard</li>'
+                    ? '<li> Start managing your practice</li><li> Connect with patients</li>' 
+                    : '<li> Book appointments with doctors</li><li> Access your health dashboard</li>'
                   }
                 </ul>
               </div>
@@ -371,7 +370,7 @@ class EmailService {
               <p>If you have any questions, feel free to contact our support team.</p>
             </div>
             <div class="footer">
-              <p>&copy; 2025 ${process.env.EMAIL_FROM_NAME || 'Your App Name'}. All rights reserved.</p>
+              <p>&copy; 2025 ${process.env.EMAIL_FROM_NAME || 'Medikonnect'}. All rights reserved.</p>
               <p>📧 Support: ${process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM_ADDRESS}</p>
             </div>
           </div>
@@ -385,14 +384,14 @@ class EmailService {
   // Test email function (useful for testing setup)
   // static async sendTestEmail(email: string): Promise<boolean> {
   //   const html = `
-  //     <h2>✅ Email Service Test</h2>
+  //     <h2> Email Service Test</h2>
   //     <p>If you're reading this, your email service is working correctly!</p>
   //     <p>Sent at: ${new Date().toISOString()}</p>
   //   `;
 
   //   return await this.sendEmail({
   //     to: email,
-  //     subject: '✅ Email Service Test',
+  //     subject: ' Email Service Test',
   //     html
   //   });
   // }
