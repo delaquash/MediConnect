@@ -604,7 +604,104 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
   }
 }
 
-const completeDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const completeDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+   const docId = req.docId
+    const imageFile = req.file;
+    const {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
+
+    if(!docId){
+      res.status(401).json({
+        success: false,
+        message: "Doctor does not exist"
+      });
+      return;
+    }
+
+    const errors = validateProfileData({ name, phone, image, specialty, degree, experience, about, fees, address}, false)
+    if (errors && errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Profile validation failed",
+        errors
+      });
+      return;
+    }
+
+    const doc = await DoctorModel.findById(docId);
+    if(!doc){
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      })
+      return
+    }
+
+    if(doc?.profileComplete){
+        res.status(400).json({
+        success: false,
+        message: "Profile is already complete. Kindly update profile"
+      })
+      return
+    }
+
+    // prepare update data 
+    const docProfileDataUpDate: any= {
+      phone: phone.trim(),
+      specialty: specialty.trim(),
+      degree: degree.trim(),
+      experience: experience.trim(),
+      about:about.trim(),
+      address: address.trim(),
+      
+      profileComplete: true,
+      profileCompletedAt: new Date()
+    }
+
+      if (imageFile) {
+        try {
+          
+          const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+        
+          const result = await cloudinary.uploader.upload(fileStr, {
+            folder: 'doctors-profiles',
+            resource_type: 'auto',
+            transformation: [
+              { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+              { quality: 'auto:good' }
+            ]
+          });
+          
+          docProfileDataUpDate.image = result.secure_url;
+        } catch (uploadError) {
+          console.error("Image upload error:", uploadError);
+          res.status(500).json({
+            success: false,
+            message: "Failed to upload image"
+          });
+          return;
+        }
+      }
+
+      const completeDocProfile = await DoctorModel.findByIdAndUpdate(
+        docId,
+        docProfileDataUpDate, 
+        {
+          new: true, 
+          runValidators: true
+        }
+      ).select("-password")
+
+       res.status(200).json({
+          success: true,
+          message: "Profile completed successfully. Please proceed to accepting appointment",
+          doctor: completeDocProfile
+        })
+  } catch (error) {
+    console.error("Complete profile error:", error);
+        next(error);
+  }
+}
 
 export {
     changeAvailability,
