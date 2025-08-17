@@ -32,33 +32,31 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 // Email test endpoint
-app.get("/test-email", async (req: Request, res: Response) => {
+// Add this to your server.ts for testing
+app.post("/test-welcome", async (req: Request, res: Response) => {
   try {
-    // Test network connectivity
-    await EmailService.testNetworkConnectivity();
+    const { email, name } = req.body;
     
-    // Test email connection
-    const isConnected = await EmailService.testConnection();
-    
-    if (isConnected && req.query.send === 'true' && req.query.to) {
-      // Send test email if parameters provided
-      const success = await EmailService.sendTestEmail(req.query.to as string);
-      res.json({ 
-        emailService: 'connected',
-        testEmailSent: success,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      res.json({ 
-        emailService: isConnected ? 'connected' : 'disconnected',
-        timestamp: new Date().toISOString()
-      });
+    if (!email || !name) {
+      return res.status(400).json({ error: 'Email and name are required' });
     }
+
+    console.log('🧪 Testing welcome email...');
+    console.log('Email service ready?', EmailService.isReady());
+    
+    const result = await EmailService.sendWelcomeEmail(email, name, 'user');
+    
+    res.json({ 
+      success: result,
+      message: result ? 'Welcome email sent!' : 'Welcome email failed',
+      emailServiceReady: EmailService.isReady()
+    });
+    
   } catch (error: any) {
+    console.error('Test welcome email error:', error);
     res.status(500).json({ 
-      error: error.message, 
-      emailService: 'failed',
-      timestamp: new Date().toISOString()
+      error: error.message,
+      success: false 
     });
   }
 });

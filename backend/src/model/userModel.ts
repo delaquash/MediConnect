@@ -26,6 +26,7 @@ name: string;
   createdAt: Date;
   updatedAt: Date;
   lastLogin: Date | null;
+  otpCode?: string | null;
 
   checkProfileCompletion(): boolean;
   comparePassword(candidatePassword: string): Promise<boolean>
@@ -133,7 +134,10 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-
+  otpCode: {
+    type: String,
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true

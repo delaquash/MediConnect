@@ -54,7 +54,7 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
       minSymbols: 1,
     })) {
       res.status(400).json({
-        success: false, // ✅ Added missing success field
+        success: false, 
         message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
       });
       return;
@@ -95,6 +95,7 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
     });
 
     const newRegisteredUser = await user.save();
+    
 
     // Send Email OTP
     const sendEmailVerification = await EmailService.sendVerificationOTP(
@@ -131,34 +132,80 @@ const verifyUserOTP = async (req: Request, res: Response, next: NextFunction): P
   try {
     const { email, otp } = req.body;
 
+    // Validate input
+    if (!email || !otp) {
+      res.status(400).json({
+        success: false,
+        message: "Email and OTP are required"
+      });
+      return;
+    }
+
+    // Hash the provided OTP to compare with stored hash
     const otpHash = hashValue(otp);
 
+    // Find user with matching email and OTP hash
     const user = await UserModel.findOne({
       email: email.trim().toLowerCase(),
       emailVerificationToken: otpHash,
-      passwordResetExpires: { $gt: new Date() },
       isEmailVerified: false
     });
 
     if (!user) {
       res.status(400).json({
         success: false,
-        message: "Invalid or expired verification code"
+        message: "Invalid verification code or email already verified"
       });
       return;
     }
 
+    // Check if user is already verified (extra safety check)
+    if (user.isEmailVerified) {
+      res.status(400).json({
+        success: false,
+        message: "Email is already verified"
+      });
+      return;
+    }
+
+    // Update user - mark as verified and clear verification data
     user.isEmailVerified = true;
     user.emailVerificationOTP = null;
-    user.passwordResetExpires = null;
+    user.emailVerificationOTPExpires = null;
     await user.save();
+
+    // Generate JWT token for the newly verified user
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Send welcome email (optional)
+    try {
+      await EmailService.sendWelcomeEmail(user.email, user.name, 'user');
+      console.log('✅ Welcome email sent to:', user.email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send welcome email:', emailError);
+      // Don't fail the verification if welcome email fails
+    }
+
+    console.log('✅ User email verified successfully:', user.email);
 
     res.status(200).json({
       success: true,
-      message: "Email verified successfully!"
+      message: "Email verified successfully!",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isEmailVerified: true
+      }
     });
 
   } catch (error) {
+    console.error('❌ OTP verification error:', error);
     next(error);
   }
 };

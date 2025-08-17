@@ -9,15 +9,15 @@ import {
   cancelAppointment,
   completeProfile,
   getProfileStatus,
-  verifyUserOTP
 } from "../controllers/userController";
 import authUser from "../middlewares/authUser";
 import upload from "../middlewares/multer";
+import { verifyUserOTP } from "../debugCode/verifyOtp"
 
 const userRouter = express.Router();
 
 userRouter.post("/register", registerUser);
-userRouter.post("/verify-otp", authUser, verifyUserOTP)
+userRouter.post("/verify-otp", verifyUserOTP)
 userRouter.post("/login", loginUser);
 
 userRouter.get("/get-profile", authUser, getProfile);
