@@ -100,7 +100,7 @@ class EmailService {
           return; // Success, exit the loop
           
         } catch (configError: any) {
-          console.log(`❌ ${name} failed: ${configError.message}`);
+          console.log(`${name} failed: ${configError.message}`);
           continue; // Try next configuration
         }
       }
@@ -110,7 +110,7 @@ class EmailService {
       
     } catch (error: any) {
       this.isInitialized = false;
-      console.error('❌ Email service initialization failed:', error.message);
+      console.error('Email service initialization failed:', error.message);
       
       // Provide helpful error messages based on common issues
       if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
@@ -165,7 +165,7 @@ class EmailService {
       console.log('📧 Email sent successfully:', result.messageId);
       return true;
     } catch (error) {
-      console.error('❌ Email sending failed:', error);
+      console.error('Email sending failed:', error);
       return false;
     }
   }
@@ -229,17 +229,17 @@ class EmailService {
             resolve(true);
           });
           socket.on('timeout', () => {
-            console.log(`❌ ${name} (${host}:${port}) - Timeout`);
+            console.log(`${name} (${host}:${port}) - Timeout`);
             socket.destroy();
             reject(new Error('Timeout'));
           });
           socket.on('error', (error: any) => {
-            console.log(`❌ ${name} (${host}:${port}) - Error: ${error.message}`);
+            console.log(`${name} (${host}:${port}) - Error: ${error.message}`);
             reject(error);
           });
         });
       } catch (error: any) {
-        console.log(`❌ ${name} connection failed: ${error.message}`);
+        console.log(`${name} connection failed: ${error.message}`);
       }
     }
   }
