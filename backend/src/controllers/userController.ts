@@ -278,7 +278,7 @@ const updateProfile = async (req: Request, res: Response, next: NextFunction): P
 
     const userId = req.userId;
 
-    const { name, phone, address, dob, gender, password } = req.body;
+    const { name, phone, address, dob, gender} = req.body;
 
     const imageFile = req.file;
 
@@ -290,7 +290,7 @@ const updateProfile = async (req: Request, res: Response, next: NextFunction): P
       return;
     }
 
-    const errors = validateProfileData({ name, phone, address, dob, gender, password }, false);
+    const errors = validateProfileData({ name, phone, address, dob, gender }, false);
     if (errors && errors.length > 0) {
       res.status(400).json({
         success: false,
@@ -322,7 +322,6 @@ const updateProfile = async (req: Request, res: Response, next: NextFunction): P
     }
     if (dob !== undefined) updateData.dob = new Date(dob);
     if (gender !== undefined) updateData.gender = gender;
-    if (password !== undefined) updateData.password = password;
 
     // Handle image upload with same logic as profile completion
     if (imageFile) {
