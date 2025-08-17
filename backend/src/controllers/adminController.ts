@@ -292,7 +292,7 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
     const [doctors, users, appointments] = await Promise.all([
       DoctorModel.find({}),
       UserModel.find({}),
-      appointmentModel.find({})
+      AppointmentModel.find({})
         .populate('userId', 'name email phone')
         .populate('docId', 'name speciality')
         .sort({ date: -1 })

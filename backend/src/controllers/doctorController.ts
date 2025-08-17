@@ -3,7 +3,6 @@ import DoctorModel from '../model/doctorModel';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
-import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
 import { validateProfileData } from '../helper/validateProfileData';
 import { v2 as cloudinary } from 'cloudinary';
@@ -325,7 +324,7 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction): 
       return;
     }
     
-    const appointmentDetails = await appointmentModel.findByIdAndUpdate(appointmentId, {
+    const appointmentDetails = await AppointmentModel.findByIdAndUpdate(appointmentId, {
       isCompleted: true,
     });
     
@@ -361,7 +360,7 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
       return;
     }
     
-    const appointments = await appointmentModel.find({ 
+    const appointments = await AppointmentModel.find({ 
       docId: authenticatedDoctorId
     }).populate('userId', 'name email phone');
     
@@ -698,8 +697,7 @@ const completeDoctorProfile = async (req: Request, res: Response, next: NextFunc
           doctor: completeDocProfile
         })
   } catch (error) {
-    console.error("Complete profile error:", error);
-        next(error);
+    
   }
 }
 
