@@ -6,7 +6,6 @@ import { v2 as cloudinary } from 'cloudinary';
 import AppointmentModel from '../model/appointmentModel';
 import mongoose from 'mongoose';
 import UserModel from '../model/userModel';
-import appointmentModel from '../model/appointmentModel';
 import { createOTp } from '../utils/token';
 import EmailService from '../services/emailService';
 
@@ -18,6 +17,7 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
       res.status(400).json({ message: "All fields are required" })
       return;
     }
+
     const trimmedEmail = email.trim().toLowerCase();
 
     if (!validator.isEmail(trimmedEmail)) {
@@ -53,6 +53,14 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
       name: name.trim(),
       email: trimmedEmail,
       password: password.trim(),
+      image: null,
+      specialty: null,
+      degree: null,
+      experience: null,
+      about: null,
+      fees: null,
+      address: null,
+      available: true,  
       isEmailVerified: false,
       emailVerificationToken: otpHash,
       passwordResetExpires: otpExpiry, // Reuse for OTP expiry

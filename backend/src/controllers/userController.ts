@@ -13,7 +13,7 @@ import { validateProfileData } from '../helper/validateProfileData';
 import { IProfileUpdateData } from '../types/type';
 import { createOTp, hashValue } from '../utils/token';
 import EmailService from '../services/emailService';
-
+import { checkUserProfileCompletion } from "../helper/CheckUserProfile"
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { name, email, password } = req.body
@@ -123,7 +123,7 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
     });
 
   } catch (error) {
-    console.error("Registration error:", error); // ✅ Add logging
+    console.error("Registration error:", error); 
     next(error);
   }
 }
@@ -398,19 +398,21 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
       const authenticatedUserId = req.userId;
       const { docId, userId, slotDate, slotTime } = req.body;
 
-      //   // Verify that authenticated user is booking for themselves (prevent unauthorized bookings)
+      // Verify that authenticated user is booking for themselves (prevent unauthorized bookings)
       if (authenticatedUserId !== userId) {
         res.status(403).json({
           success: false,
           message: "You can only book appointments for yourself"
-        })
+        });
+        return;
       }
 
       if (!userId || !docId || !slotDate || !slotTime) {
         res.status(400).json({
           success: false,
           message: "All fields are required"
-        })
+        });
+        return;
       }
 
       // Validate that user ID and doctor ID are valid MongoDB ObjectIds
@@ -422,7 +424,6 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         return;
       }
 
-
       if (!isValidAppointmentDate(slotDate)) {
         res.status(400).json({
           success: false,
@@ -430,7 +431,6 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         });
         return;
       }
-
 
       if (!isValidTimeSlot(slotTime)) {
         res.status(400).json({
@@ -440,7 +440,8 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         return;
       }
 
-      const user = await UserModel.findById(userId).session(session)
+      // Find user first
+      const user = await UserModel.findById(userId).session(session);
 
       if (!user) {
         res.status(404).json({
@@ -450,7 +451,20 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         return;
       }
 
-      const doctor = await DoctorModel.findById(docId).session(session)
+      // ✅ CHECK IF USER PROFILE IS COMPLETE
+      const isProfileComplete = checkUserProfileCompletion(user);
+      
+      if (!isProfileComplete.isComplete) {
+        res.status(400).json({
+          success: false,
+          message: "Please complete your profile before booking an appointment",
+          missingFields: isProfileComplete.missingFields,
+          profileCompletionRequired: true
+        });
+        return;
+      }
+
+      const doctor = await DoctorModel.findById(docId).session(session);
 
       if (!doctor) {
         res.status(404).json({
@@ -459,6 +473,7 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         });
         return;
       }
+
       if (!doctor.available) {
         res.status(400).json({
           success: false,
@@ -466,6 +481,7 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         });
         return;
       }
+
       // Get doctor's booked slots (object with dates as keys, time arrays as values)
       const doctorSlotsBooked = doctor.slots_booked || {};
       // Get already booked slots for the requested date (empty array if no bookings)
@@ -488,7 +504,6 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         cancelled: false
       }).session(session);
 
-
       if (existingAppointment) {
         res.status(409).json({
           success: false,
@@ -496,8 +511,8 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         });
         return;
       }
-      // Prepare appointment data object with all required information
 
+      // Prepare appointment data object with all required information
       const appointmentData = {
         userId,
         docId,
@@ -507,7 +522,10 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
           name: user.name,
           email: user.email,
           phone: user.phone,
-          address: user.address
+          address: user.address,
+          dateOfBirth: user.dob,
+          image: user.image,
+          gender: user.gender
         },
         docData: {
           name: doctor.name,
@@ -520,12 +538,9 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         cancelled: false,
         payment: false,
         isCompleted: false
-      }
-
-
+      };
 
       const newAppointment = new AppointmentModel(appointmentData);
-
       await newAppointment.save({ session });
 
       // Create copy of doctor's existing booked slots to avoid mutation
@@ -537,13 +552,13 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
       // Add the newly booked time slot to the date's array
       updatedBookedSlots[slotDate].push(slotTime);
 
-
       await DoctorModel.findByIdAndUpdate(
         docId,
         { slots_booked: updatedBookedSlots },
         { session }
       );
-      // Send successful response with appoi
+
+      // Send successful response with appointment details
       res.status(201).json({
         success: true,
         message: "Appointment booked successfully",
@@ -557,11 +572,9 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
           status: "confirmed"
         }
       });
-    })
+    });
   } catch (error: any) {
-
     console.error("Book appointment error:", error);
-
 
     if (error.name === 'ValidationError') {
       res.status(400).json({
@@ -583,7 +596,7 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
   } finally {
     await session.endSession();
   }
-}
+};
 
 
 const listAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -607,7 +620,6 @@ const listAppointment = async (req: Request, res: Response, next: NextFunction):
     next(error)
   }
 }
-
 
 
 const cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
