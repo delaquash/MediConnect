@@ -1,14 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { hashValue } from '../utils/token'; // Assuming you have a utility function to hash values
-import EmailService from '../services/emailService'; // Adjust the import path as needed
+import { hashValue } from '../utils/token'; 
+import EmailService from '../services/emailService'; 
 import DoctorModel from '../model/doctorModel';
 
-export const verifyDocOTP = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const verifyDoctorOTP = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, otp } = req.body;
 
-    // Validate input
     if (!email || !otp) {
       res.status(400).json({
         success: false,
@@ -17,17 +16,17 @@ export const verifyDocOTP = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    // Hash the provided OTP to compare with stored hash
+    const trimmedEmail = email.trim().toLowerCase();
+    
     const otpHash = hashValue(otp);
 
-    // Find doc with matching email and OTP hash
-    const doc = await DoctorModel.findOne({
-      email: email.trim().toLowerCase(),
+    const doctor = await DoctorModel.findOne({
+      email: trimmedEmail,
       emailVerificationToken: otpHash,
       isEmailVerified: false
     });
 
-    if (!doc) {
+    if (!doctor) {
       res.status(400).json({
         success: false,
         message: "Invalid verification code or email already verified"
@@ -35,73 +34,67 @@ export const verifyDocOTP = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    // Check if doc is already verified (extra safety check)
-    if (doc.isEmailVerified) {
+    // Check if OTP has expired
+    if (doctor.emailVerificationOTPExpires && doctor.emailVerificationOTPExpires < new Date()) {
       res.status(400).json({
         success: false,
-        message: "Email is already verified"
+        message: "Verification code has expired. Please request a new one."
       });
       return;
     }
 
-    // Update doc - mark as verified and clear verification data
-    doc.isEmailVerified = true;
-    doc.emailVerificationOTP = null;
-    doc.emailVerificationOTPExpires = null;
-    await doc.save();
+    // Update doctor - mark as verified and clear verification data
+    doctor.isEmailVerified = true;
+    doctor.emailVerificationOTP = undefined;
+    doctor.emailVerificationOTPExpires = undefined;
+    await doctor.save();
 
-    // Generate JWT token for the newly verified doc
+
     const token = jwt.sign(
-      { id: doc._id },
+      { 
+        id: doctor._id,
+        email: doctor.email,
+        type: 'doctor'
+      },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
     );
 
-    // Debug welcome email sending
-    console.log('🔄 Attempting to send welcome email...');
-    console.log('Email service ready?', EmailService.isReady());
-    console.log('doc data for email:', {
-      email: doc.email,
-      name: doc.name,
-      docType: 'doc'
-    });
-
-    // Send welcome email with detailed error handling
     try {
-      console.log('📧 Calling EmailService.sendWelcomeEmail...');
-      const docName = doc.name || 'doc';
-      const emailResult = await EmailService.sendWelcomeEmail(doc.email, docName ,'doctor');
-      console.log('📧 Welcome email result:', emailResult);
+      console.log('ending welcome email...');
+      const doctorName = doctor.name || 'Doctor';
+      const emailResult = await EmailService.sendWelcomeEmail(
+        doctor.email, 
+        doctorName, 
+        'doctor'
+      );
       
       if (emailResult) {
-        console.log('✅ Welcome email sent successfully to:', doc.email);
+        console.log('Welcome email sent successfully to:', doctor.email);
       } else {
-        console.log('❌ Welcome email failed to send (returned false)');
+        console.log('Welcome email failed to send');
       }
     } catch (emailError: any) {
-      console.error('⚠️ Welcome email error details:');
-      console.error('Error message:', emailError.message);
-      console.error('Error stack:', emailError.stack);
-      console.error('Error code:', emailError.code);
-      // Don't fail the verification if welcome email fails
+      console.error('Welcome email error:', emailError);
     }
 
-    console.log('✅ doc email verified successfully:', doc.email);
+    console.log('Doctor email verified successfully:', doctor.email);
 
     res.status(200).json({
       success: true,
-      message: "Email verified successfully!",
+      message: "Email verified successfully! Please complete your profile to start accepting patients.",
       token,
-      doc: {
-        id: doc._id,
-        name: doc.name,
-        email: doc.email,
-        isEmailVerified: true
+      doctor: {
+        id: doctor._id,
+        name: doctor.name,
+        email: doctor.email,
+        isEmailVerified: true,
+        profileComplete: doctor.profileComplete || false
       }
     });
 
   } catch (error) {
-    console.error('❌ OTP verification error:', error);
+    console.error('OTP verification error:', error);
     next(error);
   }
 };

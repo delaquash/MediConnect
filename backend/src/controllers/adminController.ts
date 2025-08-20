@@ -8,21 +8,28 @@ import UserModel from '../model/userModel';
 import { createOTp } from '../utils/token';
 import EmailService from '../services/emailService';
 
-const addDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const registerDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, email, password, } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      res.status(400).json({ message: "All fields are required" })
+      res.status(400).json({
+        success: false,
+        message: "Name, email, and password are required"
+      });
       return;
     }
 
     const trimmedEmail = email.trim().toLowerCase();
 
     if (!validator.isEmail(trimmedEmail)) {
-      res.status(400).json({ message: "Invalid email format" })
+      res.status(400).json({
+        success: false,
+        message: "Invalid email format"
+      });
       return;
     }
+
     if (!validator.isStrongPassword(password, {
       minLength: 8,
       minLowercase: 1,
@@ -31,54 +38,83 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
       minSymbols: 1,
     })) {
       res.status(400).json({
+        success: false,
         message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
       });
-      return; // 
-    }
-    const existingDoctor = await DoctorModel.findOne({ email: trimmedEmail });
-    if (existingDoctor) {
-      res.status(409).json({
-        success: false,
-        message: "Doctor already exists with this email"
-      })
       return;
     }
-    // Generate OTP and time for token to expire
+
+    const existingDoctor = await DoctorModel.findOne({ email: trimmedEmail });
+
+    // If doctor exists and is verified, reject registration
+    if (existingDoctor && existingDoctor.isEmailVerified) {
+      res.status(409).json({
+        success: false,
+        message: "Doctor already exists with this email. Please login instead."
+      });
+      return;
+    }
+
     const { otp, hash: otpHash } = createOTp(6);
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); 
 
+    let doctor;
 
-    const doctor = new DoctorModel({
-      name: name.trim(),
-      email: trimmedEmail,
-      password: password.trim(),
-      image: null,
-      specialty: null,
-      degree: null,
-      experience: null,
-      about: null,
-      fees: null,
-      address: null,
-      available: true,  
-      isEmailVerified: false,
-      emailVerificationToken: otpHash,
-      passwordResetExpires: otpExpiry, // Reuse for OTP expiry
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      date: Date.now(),
-    });
+    if (existingDoctor && !existingDoctor.isEmailVerified) {
+      console.log('Updating existing unverified doctor:', trimmedEmail);
 
-    const SavedDoctor = await doctor.save();
+      existingDoctor.name = name.trim();
+      existingDoctor.password = password.trim();
+      existingDoctor.emailVerificationOTP = otpHash;
+      existingDoctor.emailVerificationOTPExpires = otpExpiry;
+      existingDoctor.isEmailVerified = false;
+      existingDoctor.updatedAt = new Date();
 
-    // send email otp
-    const sendDoctorEmailVerification = await EmailService.sendVerificationOTP(
-      trimmedEmail,
-      otp,
-      "doctor"
-    )
+      doctor = await existingDoctor.save();
+    } else {
+      doctor = new DoctorModel({
+        name: name.trim(),
+        email: trimmedEmail,
+        password: password.trim(),
+        image: null,
+        specialty: null,
+        degree: null,
+        experience: null,
+        about: null,
+        fees: null,
+        address: null,
+        available: true,
+        isEmailVerified: false,
+        emailVerificationToken: otpHash,
+        emailVerificationOTPExpires: otpExpiry,
+        profileComplete: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-    if (!sendDoctorEmailVerification) {
-      await DoctorModel.findByIdAndDelete(SavedDoctor._id)
+      await doctor.save();
+    }
+    try {
+      console.log('📧 Sending verification email to:', trimmedEmail);
+      const emailSent = await EmailService.sendVerificationOTP(
+        trimmedEmail,
+        otp,
+        "doctor"
+      );
+
+      if (!emailSent) {
+        throw new Error('Email service returned false');
+      }
+
+      console.log('Verification email sent successfully');
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+
+      // Clean up: delete doctor record if it's a new registration and email fails
+      if (!existingDoctor) {
+        await DoctorModel.findByIdAndDelete(doctor._id);
+      }
+
       res.status(500).json({
         success: false,
         message: "Failed to send verification email. Please try again."
@@ -86,18 +122,20 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
       return;
     }
 
-
     res.status(201).json({
       success: true,
-      message: "Registration successful! Please check your email for verification code.",
-      userId: SavedDoctor._id,
+      message: "Registration successful! Please check your email for the verification code.",
+      doctorId: doctor._id,
       email: trimmedEmail,
-      name
+      name: name.trim()
     });
+
   } catch (error: any) {
+    console.error('Registration error:', error);
     next(error);
   }
-}
+};
+
 
 const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -219,7 +257,7 @@ const appointmentCancel = async (req: Request, res: Response, next: NextFunction
     )
 
 
-  const doctor = await DoctorModel.findById(appointment.docId._id).session(session);
+    const doctor = await DoctorModel.findById(appointment.docId._id).session(session);
     if (doctor) {
 
       const updatedSlots = { ...doctor.slots_booked };
@@ -391,7 +429,7 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
 }
 
 export {
-  addDoctor,
+  registerDoctor,
   loginAdmin,
   allDoctors,
   appointmentsAdmin,
