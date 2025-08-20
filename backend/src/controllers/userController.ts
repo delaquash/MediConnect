@@ -14,6 +14,8 @@ import { IProfileUpdateData } from '../types/type';
 import { createOTp, hashValue } from '../utils/token';
 import EmailService from '../services/emailService';
 import { checkUserProfileCompletion } from "../helper/CheckUserProfile"
+
+
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { name, email, password } = req.body
@@ -71,8 +73,8 @@ const registerUser = async (req: Request, res: Response, next: NextFunction): Pr
     }
 
     // Generate OTP and time for token to expire
-    const { otp, hash: otpHash } = createOTp(6); // ✅ Fixed function name and destructuring
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const { otp, hash: otpHash } = createOTp(6); 
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); 
 
     const user = new UserModel({
       name: trimmedName,
