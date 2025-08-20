@@ -11,10 +11,12 @@ import { loginDoctor,
     } from "../controllers/doctorController";
 import authDoctor from "../middlewares/docAuth";
 import { checkDoctorProfileComplete } from "../middlewares/checkDoctorProfileComplete";
+import { verifyDocOTP } from "../debugCode/VerifyDocOtp";
 
 const doctorRouter = express.Router();
 
 doctorRouter.get("/list", authDoctor, checkDoctorProfileComplete, doctorList);
+doctorRouter.post("/verify-otp", verifyDocOTP)
 doctorRouter.post("/login", loginDoctor);
 doctorRouter.get("/appointments", authDoctor, checkDoctorProfileComplete, getDoctorAppointments);
 doctorRouter.post("/complete-appointment", authDoctor, appointmentComplete);
