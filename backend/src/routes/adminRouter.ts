@@ -7,19 +7,14 @@ import {
   appointmentCancel,
   adminDashboard,
 } from "../controllers/adminController";
-import upload from "../middlewares/multer";
 import authAdmin from "../middlewares/authAdmin";
 import { changeAvailability } from "../controllers/doctorController";
-// import { changeAvailability } from "../controllers/doctorController";
 
 const adminRouter = express.Router();
 
-adminRouter.post("/add-doctor",
-   authAdmin,  addDoctor);
-adminRouter.post("/login", loginAdmin);
-adminRouter.get("/all-doctors",
-   authAdmin, 
-   allDoctors);
+adminRouter.post("/add-doctor",  addDoctor);
+adminRouter.post("/login", authAdmin, loginAdmin);
+adminRouter.get("/all-doctors",authAdmin, allDoctors);
 adminRouter.post("/change-availability", authAdmin, changeAvailability);
 adminRouter.get("/appointments", authAdmin, appointmentsAdmin);
 adminRouter.post("/cancel-appointment", authAdmin, appointmentCancel);

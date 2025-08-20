@@ -7,32 +7,32 @@ export interface IDoctor extends Document {
   email: string;
   password: string;
   image?: string;
-  specialty: string;
-  degree: string;
-  experience: string;
-  about: string;
-  available: boolean;
-  fees: number;
-  address: {
+  specialty?: string;
+  degree?: string;
+  experience?: string;
+  about?: string;
+  available?: boolean;
+  fees?: number;
+  address?: {
     [key: string]: any;
   };
   date: Date;
-  slots_booked: {
+  slots_booked?: {
     [key: string]: any;
   };
 
-  profileComplete: boolean;
-  profileCompletedAt: Date | null;
-  isActive: boolean;
-  isEmailVerified: boolean;
+  profileComplete?: boolean;
+  profileCompletedAt?: Date | null;
+  isActive?: boolean;
+  isEmailVerified?: boolean;
   emailVerificationOTP?: string | null;         
   emailVerificationOTPExpires?: Date | null;    
   emailVerificationOTPAttempts?: number;        
-  passwordResetToken: string | null;
-  passwordResetExpires: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  lastLogin: Date | null;
+  passwordResetToken?: string | null;
+  passwordResetExpires?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  lastLogin?: Date | null;
 
   checkProfileCompletion(): boolean;
   comparePassword(candidatePassword: string): Promise<boolean>
@@ -40,17 +40,40 @@ export interface IDoctor extends Document {
 
 const doctorSchema = new Schema<IDoctor>(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    name: { 
+      type: String, 
+      required: true,
+      trim: true,
+      minlength: [2, "Name must be at least 2 characters long"],
+      maxlength: [50, "Name must be less than 50 characters"]  
+    },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    trim: true,
+    isLowercase: true,
+    lowercase: true,
+    validate: {
+      validator: function(email: string) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      },
+      message: "Please provide a valid email address"
+    }
+  },
+    password: { 
+    type: String, 
+    required: [true, "Password is required." ],
+    minlength: [8, "Password must be at least 8 characters long"]
+  },
     image: { type: String  },
-    specialty: { type: String, required: true },
-    degree: { type: String, required: true },
-    experience: { type: String, required: true },
-    about: { type: String, required: true },
+    specialty: { type: String },
+    degree: { type: String},
+    experience: { type: String },
+    about: { type: String},
     available: { type: Boolean, default: true },
-    fees: { type: Number, required: true },
-    address: { type: Object, required: true },
+    fees: { type: Number },
+    address: { type: Object, },
     date: {type: Date, default: Date.now },
 
     slots_booked: { type: Object, default: {} },

@@ -327,7 +327,7 @@ const updateProfile = async (req: Request, res: Response, next: NextFunction): P
     if (imageFile) {
       try {
 
-        const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+        const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
 
         const result = await cloudinary.uploader.upload(fileStr, {
           folder: 'user-profiles',
@@ -712,7 +712,7 @@ const getAvailableSlots = async (req: Request, res: Response, next: NextFunction
     // Generate all possible time slots for the day
     const allSlots = generateTimeSlots();
     // Get booked slots for the requested date (empty array if none)
-    const bookedSlots = doctor.slots_booked[date] || [];
+    const bookedSlots = (doctor.slots_booked ?? {})[date] || [];
     // Filter out booked slots to get available slots
     const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
 
@@ -794,7 +794,7 @@ const completeProfile = async (req: AuthenticatedRequest, res: Response, next: N
     // Handle Image Upload to cloudinary
     if (imageFile) {
       try {
-        const storedImage = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+        const storedImage = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
 
 
         const result = await cloudinary.uploader.upload(storedImage, {

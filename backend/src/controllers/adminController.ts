@@ -39,7 +39,7 @@ const addDoctor = async (req: Request, res: Response, next: NextFunction): Promi
     if (existingDoctor) {
       res.status(409).json({
         success: false,
-        message: "Doctor already exists wit this email"
+        message: "Doctor already exists with this email"
       })
       return;
     }

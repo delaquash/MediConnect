@@ -549,7 +549,7 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
   if (imageFile) {
         try {
           
-          const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+          const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
         
           const result = await cloudinary.uploader.upload(fileStr, {
             folder: 'doctors-profiles',
@@ -606,7 +606,7 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
 const completeDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
    const docId = req.docId
-    const imageFile = req.file;
+    const imageFile = req?.file;
     const {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
 
     if(!docId){
@@ -660,7 +660,7 @@ const completeDoctorProfile = async (req: Request, res: Response, next: NextFunc
       if (imageFile) {
         try {
           
-          const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+          const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
         
           const result = await cloudinary.uploader.upload(fileStr, {
             folder: 'doctors-profiles',
