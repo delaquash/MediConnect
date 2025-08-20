@@ -15,8 +15,7 @@ import { changeAvailability } from "../controllers/doctorController";
 const adminRouter = express.Router();
 
 adminRouter.post("/add-doctor",
-   authAdmin, 
-   upload.single("image"), addDoctor);
+   authAdmin,  addDoctor);
 adminRouter.post("/login", loginAdmin);
 adminRouter.get("/all-doctors",
    authAdmin, 
