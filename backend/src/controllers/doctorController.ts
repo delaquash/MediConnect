@@ -711,5 +711,5 @@ export {
     doctorsDashboard,
     getDoctorProfile,
     updateDoctorProfile,
-    
+    completeDoctorProfile
 }
