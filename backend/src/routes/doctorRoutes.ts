@@ -11,9 +11,8 @@ import {
 } from "../controllers/doctorController";
 import authDoctor from "../middlewares/docAuth";
 import { checkDoctorProfileComplete } from "../middlewares/checkDoctorProfileComplete";
-import { verifyDoctorOTP } from "../debugCode/VerifyDocOtp";
-import { verifyUserOTP } from "../debugCode/verifyOtp";
-// verifyUserOTP
+import { verifyDoctorOTP } from "../otpVerification/VerifyDocOtp";
+import { requestDoctorPasswordReset, resetDoctorPassword, resendVerificationOTP} from "../controllers/PasswordResetController"
 
 const doctorRouter = express.Router();
 
@@ -26,5 +25,9 @@ doctorRouter.post("/cancel-appointment", authDoctor, checkDoctorProfileComplete,
 doctorRouter.get("/dashboard", authDoctor, doctorsDashboard);
 doctorRouter.get("/profile", authDoctor, getDoctorProfile);
 doctorRouter.post("/update-profile", authDoctor, updateDoctorProfile);
+doctorRouter.post("/request-password-reset", requestDoctorPasswordReset);
+doctorRouter.post("/reset-password", resetDoctorPassword);
+doctorRouter.post("/resend-verification-otp", authDoctor, resendVerificationOTP);
+
 
 export default doctorRouter;

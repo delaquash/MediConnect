@@ -12,7 +12,7 @@ import {
 } from "../controllers/userController";
 import authUser from "../middlewares/authUser";
 import upload from "../middlewares/multer";
-import { verifyUserOTP } from "../debugCode/verifyOtp"
+import { verifyUserOTP } from "../otpVerification/verifyOtp"
 
 const userRouter = express.Router();
 
