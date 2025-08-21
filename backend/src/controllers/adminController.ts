@@ -61,16 +61,11 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
     let doctor;
 
     if (existingDoctor && !existingDoctor.isEmailVerified) {
-      console.log('Updating existing unverified doctor:', trimmedEmail);
-
       existingDoctor.name = name.trim();
       existingDoctor.password = password.trim();
-
-  
-      // ✅ CORRECT:
-      existingDoctor.emailVerificationToken = otpHash;  // Use same field as new doctors
+      existingDoctor.emailVerificationToken = otpHash;  
       existingDoctor.emailVerificationOTPExpires = otpExpiry;
-      existingDoctor.isEmailVerified = false;  // Explicitly set to false
+      existingDoctor.isEmailVerified = false;  
       existingDoctor.updatedAt = new Date();
 
       doctor = await existingDoctor.save();
@@ -104,17 +99,11 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
         "doctor"
       );
 
-    try {
-      console.log('📧 Sending verification email to:', trimmedEmail);
-      
+    try {   
       if (!emailSent) {
         throw new Error('Email service returned false');
       }
-
-      console.log('Verification email sent successfully');
     } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-
       // Clean up: delete doctor record if it's a new registration and email fails
       if (!existingDoctor) {
         await DoctorModel.findByIdAndDelete(doctor._id);
@@ -140,7 +129,6 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
     next(error);
   }
 };
-
 
 const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
