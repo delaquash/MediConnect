@@ -12,6 +12,8 @@ import {
 import authDoctor from "../middlewares/docAuth";
 import { checkDoctorProfileComplete } from "../middlewares/checkDoctorProfileComplete";
 import { verifyDoctorOTP } from "../debugCode/VerifyDocOtp";
+import { verifyUserOTP } from "../debugCode/verifyOtp";
+// verifyUserOTP
 
 const doctorRouter = express.Router();
 

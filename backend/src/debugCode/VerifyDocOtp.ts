@@ -17,23 +17,78 @@ export const verifyDoctorOTP = async (req: Request, res: Response, next: NextFun
     }
 
     const trimmedEmail = email.trim().toLowerCase();
-    
-    const otpHash = hashValue(otp);
 
-    const doctor = await DoctorModel.findOne({
-      email: trimmedEmail,
-      emailVerificationToken: otpHash,
-      isEmailVerified: false
+        // 🔍 DEBUG: Check what exists in DB
+    const doctorInDB = await DoctorModel.findOne({ email: trimmedEmail });
+    console.log('🔍 Doctor found in DB:', {
+      exists: !!doctorInDB,
+      email: doctorInDB?.email,
+      isEmailVerified: doctorInDB?.isEmailVerified,
+      hasToken: !!doctorInDB?.emailVerificationToken,
+      tokenValue: doctorInDB?.emailVerificationToken,
+      hasExpiry: !!doctorInDB?.emailVerificationOTPExpires,
+      expiryValue: doctorInDB?.emailVerificationOTPExpires
     });
+    
+    // 🔍 DEBUG: Check OTP hash
+    const otpHash = hashValue(otp);
+    console.log('🔍 OTP Debug:', {
+      providedOTP: otp,
+      hashedOTP: otpHash,
+      storedToken: doctorInDB?.emailVerificationToken,
+      hashesMatch: otpHash === doctorInDB?.emailVerificationToken
+    });
+    
+    // const otpHash = hashValue(otp);
 
-    if (!doctor) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid verification code or email already verified"
-      });
-      return;
-    }
+    // const doctor = await DoctorModel.findOne({
+    //   email: trimmedEmail,
+    //   emailVerificationToken: otpHash,
+    //   isEmailVerified: false
+    // });
 
+    // if (!doctor) {
+    //   res.status(400).json({
+    //     success: false,
+    //     message: "Invalid verification code or email already verified"
+    //   });
+    //   return;
+    // }
+
+
+    const doctor = await DoctorModel.findOne({ email: trimmedEmail });
+
+if (!doctor) {
+  res.status(404).json({
+    success: false,
+    message: "No account found with this email"
+  });
+  return;
+}
+
+if (doctor.isEmailVerified) {
+  res.status(400).json({
+    success: false,
+    message: "Email is already verified"
+  });
+  return;
+}
+
+if (!doctor.emailVerificationToken) {
+  res.status(400).json({
+    success: false,
+    message: "No verification code found. Please request a new one."
+  });
+  return;
+}
+
+if (doctor.emailVerificationToken !== otpHash) {
+  res.status(400).json({
+    success: false,
+    message: "Invalid verification code"
+  });
+  return;
+}
     // Check if OTP has expired
     if (doctor.emailVerificationOTPExpires && doctor.emailVerificationOTPExpires < new Date()) {
       res.status(400).json({
@@ -47,9 +102,9 @@ export const verifyDoctorOTP = async (req: Request, res: Response, next: NextFun
     doctor.isEmailVerified = true;
     doctor.emailVerificationOTP = undefined;
     doctor.emailVerificationOTPExpires = undefined;
+    doctor.emailVerificationToken = undefined;
+
     await doctor.save();
-
-
     const token = jwt.sign(
       { 
         id: doctor._id,

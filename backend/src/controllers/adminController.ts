@@ -45,7 +45,7 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
     }
 
     const existingDoctor = await DoctorModel.findOne({ email: trimmedEmail });
-   
+
     // If doctor exists and is verified, reject registration
     if (existingDoctor && existingDoctor.isEmailVerified) {
       res.status(409).json({
@@ -65,9 +65,12 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
 
       existingDoctor.name = name.trim();
       existingDoctor.password = password.trim();
-      existingDoctor.emailVerificationOTP = otpHash;
+
+  
+      // ✅ CORRECT:
+      existingDoctor.emailVerificationToken = otpHash;  // Use same field as new doctors
       existingDoctor.emailVerificationOTPExpires = otpExpiry;
-      existingDoctor.isEmailVerified = false;
+      existingDoctor.isEmailVerified = false;  // Explicitly set to false
       existingDoctor.updatedAt = new Date();
 
       doctor = await existingDoctor.save();
@@ -95,36 +98,34 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
       await doctor.save();
     }
     
-    
     const emailSent = await EmailService.sendVerificationOTP(
         trimmedEmail,
         otp,
         "doctor"
       );
 
-    // try {
-    //   console.log('📧 Sending verification email to:', trimmedEmail);
+    try {
+      console.log('📧 Sending verification email to:', trimmedEmail);
       
-    //   if (!emailSent) {
-    //     throw new Error('Email service returned false');
-    //   }
+      if (!emailSent) {
+        throw new Error('Email service returned false');
+      }
 
-    //   console.log('Verification email sent successfully');
-    // } catch (emailError) {
-    //   console.error('Email sending failed:', emailError);
+      console.log('Verification email sent successfully');
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
 
       // Clean up: delete doctor record if it's a new registration and email fails
-      if (!emailSent) {
-        await DoctorModel.findByIdAndDelete(doctor._id);   
-        res.status(500).json({
+      if (!existingDoctor) {
+        await DoctorModel.findByIdAndDelete(doctor._id);
+      }
+
+      res.status(500).json({
         success: false,
         message: "Failed to send verification email. Please try again."
       });
       return;
-      }
-
-   
-    // }
+    }
 
     res.status(201).json({
       success: true,

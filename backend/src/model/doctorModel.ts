@@ -24,15 +24,16 @@ export interface IDoctor extends Document {
   profileComplete?: boolean;
   profileCompletedAt?: Date | null;
   isActive?: boolean;
-  isEmailVerified?: boolean;
-  emailVerificationOTP?: string | null;         
-  emailVerificationOTPExpires?: Date | null;    
+  emailVerificationOTP?: string | null;      
   emailVerificationOTPAttempts?: number;        
   passwordResetToken?: string | null;
   passwordResetExpires?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
   lastLogin?: Date | null;
+  isEmailVerified?: boolean;           
+  emailVerificationToken?: string;       
+  emailVerificationOTPExpires?: Date;  
 
   checkProfileCompletion(): boolean;
   comparePassword(candidatePassword: string): Promise<boolean>
@@ -77,6 +78,63 @@ const doctorSchema = new Schema<IDoctor>(
     date: {type: Date, default: Date.now },
 
     slots_booked: { type: Object, default: {} },
+    emailVerificationOTP: { 
+    type: String, 
+    default: null 
+  },
+    emailVerificationOTPExpires: { 
+      type: Date, 
+      default: null 
+    },
+    emailVerificationOTPAttempts: { 
+      type: Number, 
+      default: 0 
+    },
+  profileComplete: {
+    type: Boolean,
+    default: false
+  },
+  
+  profileCompletedAt: {
+    type: Date,
+    default: null
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  
+  emailVerificationToken: {
+    type: String,
+    default: null
+  },
+  
+
+  passwordResetToken: {
+    type: String,
+    default: null
+  },
+  
+  passwordResetExpires: {
+    type: Date,
+    default: null
+  },
+  
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  
+  lastLogin: {
+    type: Date,
+    default: null
+  }
   },
   { minimize: false, // Prevents mongoose from removing empty objects
     timestamps: true   // Automatically adds createdAt and updatedAt fields
