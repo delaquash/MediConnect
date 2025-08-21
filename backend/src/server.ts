@@ -31,37 +31,6 @@ app.get("/", (req: Request, res: Response) => {
   res.send("API WORKING");
 });
 
-// Email test endpoint
-// Add this to your server.ts for testing
-app.post("/test-welcome", async (req: Request, res: Response) => {
-  try {
-    const { email, name } = req.body;
-    
-    if (!email || !name) {
-      return res.status(400).json({ error: 'Email and name are required' });
-    }
-
-    console.log('🧪 Testing welcome email...');
-    console.log('Email service ready?', EmailService.isReady());
-    
-    const result = await EmailService.sendWelcomeEmail(email, name, 'user');
-    
-    res.json({ 
-      success: result,
-      message: result ? 'Welcome email sent!' : 'Welcome email failed',
-      emailServiceReady: EmailService.isReady()
-    });
-    
-  } catch (error: any) {
-    console.error('Test welcome email error:', error);
-    res.status(500).json({ 
-      error: error.message,
-      success: false 
-    });
-  }
-});
-
-
 async function startServer() {
   try {
     // Connect to database

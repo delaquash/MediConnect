@@ -1,4 +1,3 @@
-// templates/emailTemplates.ts
 
 interface VerificationEmailData {
   otp: string;
