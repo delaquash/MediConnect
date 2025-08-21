@@ -18,11 +18,6 @@ class EmailService {
       if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
         throw new Error('Missing required environment variables: EMAIL_USER or EMAIL_APP_PASSWORD');
       }
-
-      console.log('Initializing email service...');
-      console.log(`Email User: ${process.env.EMAIL_USER}`);
-      console.log(`Password length: ${process.env.EMAIL_APP_PASSWORD?.length} characters`);
-
       // Try different SMTP configurations
       const configs = [
         // Configuration 1: Gmail with explicit settings
@@ -82,8 +77,6 @@ class EmailService {
       // Try each configuration
       for (const { name, config } of configs) {
         try {
-          console.log(`Trying ${name}...`);
-          
           this.transporter = nodemailer.createTransport(config);
 
           // Test the connection with a shorter timeout
@@ -95,12 +88,9 @@ class EmailService {
           await Promise.race([verifyPromise, timeoutPromise]);
           
           this.isInitialized = true;
-          console.log(`Email service initialized successfully with ${name}`);
-          console.log(`Using email: ${process.env.EMAIL_USER}`);
-          return; // Success, exit the loop
+          return; 
           
         } catch (configError: any) {
-          console.log(`${name} failed: ${configError.message}`);
           continue; // Try next configuration
         }
       }
@@ -110,7 +100,6 @@ class EmailService {
       
     } catch (error: any) {
       this.isInitialized = false;
-      console.error('Email service initialization failed:', error.message);
       
       // Provide helpful error messages based on common issues
       if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
@@ -162,10 +151,8 @@ class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', result.messageId);
       return true;
     } catch (error) {
-      console.error('Email sending failed:', error);
       return false;
     }
   }
@@ -203,7 +190,6 @@ class EmailService {
       await this.transporter.verify();
       return true;
     } catch (error) {
-      console.error('Email connection test failed:', error);
       return false;
     }
   }
@@ -216,25 +202,20 @@ class EmailService {
       { host: 'smtp.gmail.com', port: 587, name: 'SMTP TLS' },
       { host: 'smtp.gmail.com', port: 465, name: 'SMTP SSL' },
     ];
-
-    console.log('🔍 Testing network connectivity...');
     
     for (const { host, port, name } of testPorts) {
       try {
         await new Promise((resolve, reject) => {
           const socket = net.createConnection({ host, port, timeout: 5000 });
           socket.on('connect', () => {
-            console.log(`✅ ${name} (${host}:${port}) - Connected`);
             socket.destroy();
             resolve(true);
           });
           socket.on('timeout', () => {
-            console.log(`${name} (${host}:${port}) - Timeout`);
             socket.destroy();
             reject(new Error('Timeout'));
           });
           socket.on('error', (error: any) => {
-            console.log(`${name} (${host}:${port}) - Error: ${error.message}`);
             reject(error);
           });
         });
@@ -249,7 +230,6 @@ class EmailService {
     if (this.transporter) {
       this.transporter.close();
       this.isInitialized = false;
-      console.log('📧 Email service shut down');
     }
   }
 }
