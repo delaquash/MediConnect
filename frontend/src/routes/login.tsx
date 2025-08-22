@@ -20,7 +20,7 @@ function Login() {
             </div>
             <div>
               <button
-              className='!bg-[#5F6FFF] outline-0 !p-[12px] !text-xl !rounded !border-[6] !mt-[11px] w-[385px] !text-white !items-center !justify-center'
+              className='!bg-red-600 outline-0 !p-[12px] !text-xl !rounded !border-[6] !mt-[11px] w-[385px] !text-white !items-center !justify-center'
               >
                 Login
               </button>  

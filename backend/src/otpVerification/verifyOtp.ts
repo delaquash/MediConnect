@@ -57,36 +57,27 @@ export const verifyUserOTP = async (req: Request, res: Response, next: NextFunct
       { expiresIn: '7d' }
     );
 
-    // Debug welcome email sending
-    console.log('🔄 Attempting to send welcome email...');
-    console.log('Email service ready?', EmailService.isReady());
-    console.log('User data for email:', {
-      email: user.email,
-      name: user.name,
-      userType: 'user'
-    });
-
     // Send welcome email with detailed error handling
     try {
-      console.log('📧 Calling EmailService.sendWelcomeEmail...');
+      console.log('Calling EmailService.sendWelcomeEmail...');
       const userName = user.name || 'User';
       const emailResult = await EmailService.sendWelcomeEmail(user.email, userName ,'user');
-      console.log('📧 Welcome email result:', emailResult);
+      console.log('Welcome email result:', emailResult);
       
       if (emailResult) {
-        console.log('✅ Welcome email sent successfully to:', user.email);
+        console.log('Welcome email sent successfully to:', user.email);
       } else {
-        console.log('❌ Welcome email failed to send (returned false)');
+        console.log('Welcome email failed to send (returned false)');
       }
     } catch (emailError: any) {
-      console.error('⚠️ Welcome email error details:');
+      console.error('Welcome email error details:');
       console.error('Error message:', emailError.message);
       console.error('Error stack:', emailError.stack);
       console.error('Error code:', emailError.code);
       // Don't fail the verification if welcome email fails
     }
 
-    console.log('✅ User email verified successfully:', user.email);
+    console.log('User email verified successfully:', user.email);
 
     res.status(200).json({
       success: true,
@@ -101,7 +92,7 @@ export const verifyUserOTP = async (req: Request, res: Response, next: NextFunct
     });
 
   } catch (error) {
-    console.error('❌ OTP verification error:', error);
+    console.error('OTP verification error:', error);
     next(error);
   }
 };
