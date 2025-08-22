@@ -5,7 +5,6 @@ import DoctorModel from '../model/doctorModel'
 import { createOTp, createSecureToken, hashValue } from '../utils/token';
 import EmailService from '../services/emailService';
 
-// Request Password Reset for User
 const requestUserPasswordReset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { email } = req.body;
@@ -77,7 +76,69 @@ const requestUserPasswordReset = async (req: Request, res: Response, next: NextF
     }
 };
 
-// Request Password Reset for Doctor
+const resetUserPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            res.status(400).json({
+                success: false,
+                message: "Reset token and new password are required"
+            });
+            return;
+        }
+
+        // Validate password strength
+        if (!validator.isStrongPassword(newPassword, {
+            minLength: 8,
+            minLowercase: 1,
+            minUppercase: 1,
+            minNumbers: 1,
+            minSymbols: 1,
+        })) {
+            res.status(400).json({
+                success: false,
+                message: "Password must be at least 8 characters with uppercase, lowercase, numbers, and symbols"
+            });
+            return;
+        }
+
+        // Hash the incoming token to compare with stored hash
+        const tokenHash = hashValue(token);
+
+        // Find user with valid token that hasn't expired
+        const user = await UserModel.findOne({
+            passwordResetToken: tokenHash,
+            passwordResetExpires: { $gt: new Date() }
+        });
+
+        if (!user) {
+            res.status(400).json({
+                success: false,
+                message: "Invalid or expired reset token"
+            });
+            return;
+        }
+
+        // Update password (will be hashed by pre-save hook)
+        user.password = newPassword;
+        user.passwordResetToken = null;
+        user.passwordResetExpires = null;
+        user.updatedAt = new Date();
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password reset successful! You can now login with your new password."
+        });
+
+    } catch (error) {
+        console.error("User password reset error:", error);
+        next(error);
+    }
+};
+
 const requestDoctorPasswordReset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { email } = req.body;
@@ -144,70 +205,6 @@ const requestDoctorPasswordReset = async (req: Request, res: Response, next: Nex
 
     } catch (error) {
         console.error("Doctor password reset request error:", error);
-        next(error);
-    }
-};
-
-// Reset Password for User
-const resetUserPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const { token, newPassword } = req.body;
-
-        if (!token || !newPassword) {
-            res.status(400).json({
-                success: false,
-                message: "Reset token and new password are required"
-            });
-            return;
-        }
-
-        // Validate password strength
-        if (!validator.isStrongPassword(newPassword, {
-            minLength: 8,
-            minLowercase: 1,
-            minUppercase: 1,
-            minNumbers: 1,
-            minSymbols: 1,
-        })) {
-            res.status(400).json({
-                success: false,
-                message: "Password must be at least 8 characters with uppercase, lowercase, numbers, and symbols"
-            });
-            return;
-        }
-
-        // Hash the incoming token to compare with stored hash
-        const tokenHash = hashValue(token);
-
-        // Find user with valid token that hasn't expired
-        const user = await UserModel.findOne({
-            passwordResetToken: tokenHash,
-            passwordResetExpires: { $gt: new Date() }
-        });
-
-        if (!user) {
-            res.status(400).json({
-                success: false,
-                message: "Invalid or expired reset token"
-            });
-            return;
-        }
-
-        // Update password (will be hashed by pre-save hook)
-        user.password = newPassword;
-        user.passwordResetToken = null;
-        user.passwordResetExpires = null;
-        user.updatedAt = new Date();
-
-        await user.save();
-
-        res.status(200).json({
-            success: true,
-            message: "Password reset successful! You can now login with your new password."
-        });
-
-    } catch (error) {
-        console.error("User password reset error:", error);
         next(error);
     }
 };

@@ -25,9 +25,6 @@ doctorRouter.post("/cancel-appointment", authDoctor, checkDoctorProfileComplete,
 doctorRouter.get("/dashboard", authDoctor, doctorsDashboard);
 doctorRouter.get("/profile", authDoctor, getDoctorProfile);
 doctorRouter.post("/update-profile", authDoctor, updateDoctorProfile);
-doctorRouter.post("/request-password-reset", requestDoctorPasswordReset);
-doctorRouter.post("/reset-password", resetDoctorPassword);
-doctorRouter.post("/resend-verification-otp", authDoctor, resendVerificationOTP);
 
 
 export default doctorRouter;

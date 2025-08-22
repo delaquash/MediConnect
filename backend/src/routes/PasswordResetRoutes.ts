@@ -11,10 +11,10 @@ import {
 const passwordRouter = express.Router();
 
 // Password Reset Routes
-passwordRouter.post('/user/request-reset', requestUserPasswordReset);
-passwordRouter.post('/doctor/request-reset', requestDoctorPasswordReset);
-passwordRouter.post('/user/reset', resetUserPassword);
-passwordRouter.post('/doctor/reset', resetDoctorPassword);
+passwordRouter.post('/user/request-reset', requestUserPasswordReset); // send reset email
+passwordRouter.post('/doctor/request-reset', requestDoctorPasswordReset); // send reset email
+passwordRouter.post('/user/reset', resetUserPassword); //reset password button in FE
+passwordRouter.post('/doctor/reset', resetDoctorPassword); //reset password button in FE
 
 // Utility Routes
 passwordRouter.post('/resend-otp', resendVerificationOTP);
