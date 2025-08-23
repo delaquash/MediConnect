@@ -27,7 +27,7 @@ const Navbar = () => {
     setToken("")
   }
   return (
-    <nav className=" !flex !items-center !justify-between !text-sm !py-4 !mb-5 !border-b !border-b-[#ADADAD]">
+    <nav className=" flex flex-wrap items-center justify-between text-sm py-4 mb-5 border-b border-b-[#ADADAD]">
       {/* logo */}
       <img 
       onClick={() => navigate({ to: '/' })} 
@@ -42,14 +42,14 @@ const Navbar = () => {
           <Link
             key={index}
             to={nav.path}
-            className="[&.active]:!text-[#1F2937]"
+            className="[&.active]:text-[#0b59c5] group relative"
           >
-            <li className='!py-1'> {nav.label}</li>
-            <hr 
-              className={`border-none outline-none !bg-blue-600 w-full m-auto transition-opacity ${
-                isActiveLink(nav.path) ? 'opacity-100' : 'opacity-0'
-              }`} 
-            />
+            <li className='py-1'> {nav.label}</li>
+         <span
+        className={`absolute left-0 bottom-0 h-[2px] w-full bg-blue-600 transition-transform duration-300 
+          ${isActiveLink(nav.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}
+      />
+      
           </Link>
          ))}
         </ul>
@@ -75,7 +75,7 @@ const Navbar = () => {
             <img  className='w-2.5' alt='Dropdown' src={assets.dropdown_icon}  />
 
             {/* Dropdown Menu */}
-            <div className='!absolute !top-0 !right-0 !pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:hidden'>
+            <div className='absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:hidden'>
               <div className='min-w-48 bg-[#F8F8F8] flex flex-col rounded font-bold text-[#4B5563] gap-4 p-4 shadow-lg'>
                 <Link
                   className='hover:text-black cursor-pointer transition-colors' 
@@ -101,7 +101,7 @@ const Navbar = () => {
           ) :(
               <button 
             onClick={() => navigate({ to: '/createAccount' })} 
-            className='!bg-[#5F6FFF] !text-white cursor-pointer !px-8 !py-3 !rounded-full !font-bold !text-xl hidden md:block !transition-colors'
+            className='bg-[#5F6FFF] text-white cursor-pointer px-8 py-3 rounded-full font-bold text-xl hidden md:block transition-colors'
           >
             Create account
           </button>

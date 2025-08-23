@@ -1,6 +1,4 @@
-@import "tailwindcss";
-/* @import "tailwind/utilities"; */
-@import "tailwindcss/preflight";
+
 #root {
   max-width: 1280px;
   margin: 0 auto;

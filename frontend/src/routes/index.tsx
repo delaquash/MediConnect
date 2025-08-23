@@ -7,7 +7,7 @@ export const Route = createFileRoute('/')({
 function Home() {
   return (
     <>
-      <div className='flex flex-col md:flex-row !flex-wrap bg-[#5F6FFF] !rounded-lg !px-6 !md:px-10 !lg:px-20 '>
+      <div className='flex flex-col md:flex-row flex-wrap bg-[#5F6FFF] rounded-lg px-6 md:px-10 lg:px-20 '>
 
             {/* --------- Header Left --------- */}
             <div className='md:w-1/2 flex flex-col items-start justify-center gap-4 py-10 m-auto md:py-[10vw] md:mb-[-30px]'>
@@ -29,7 +29,10 @@ function Home() {
             </div>
         </div>
       {/* Find By Specialty */}
-
+        <div className="">
+          <p className="">Find by Speciality</p>
+          <p>Simply browse through our extensive list of trusted doctors, schedule <br /> your appointment halse-free.</p>
+        </div>
       {/* Top Doctors to ask */}
 
       {/* Homepage Banner */}
