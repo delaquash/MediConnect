@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { assets, doctors, specialityData, appointment_img } from '../assets/assets';
+import { assets, doctors, specialityData } from '../assets/assets';
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
-function Home() {
+function Home({ docId }: any) {
   const navigate = useNavigate()
   return (
     <>
@@ -59,7 +59,15 @@ function Home() {
           <p className='sm:w-1/3 mb-10 text-center text-sm'>Simply browse through our extensive list of trusted doctors.</p>
           <div className='grid grid-cols-5 w-full gap-4 px-2 sm:px-0 gap-y-6'>
             {doctors.slice(0, 10).map((doctor, index) => (
-              <div onClick={() => { navigate(`/appointment/${docId}`); scrollTo(0, 0) }}
+              <div onClick={() => {
+                navigate({
+                  to: '/doctors/$speciality',
+                  params: { speciality: docId.toString() }
+
+                });
+
+                scrollTo(0, 0)
+              }}
                 key={index}
                 className='border border-[#C9D8FF] rounded-xl overflow-hidden cursor-pointer hover:transalte-y-[-10px] transition-all duration-500'
               >
@@ -75,42 +83,52 @@ function Home() {
               </div>
             ))}
           </div>
-          <button 
-            onClick={() => { navigate('/doctors/index'); scrollTo(0, 0) }} 
-            className='bg-[#EAEFFF] cursor-pointer text-gray-600 px-12 py-3 rounded-full mt-10'>more</button>
-
+          <button
+            onClick={() => {
+              navigate({ to: '/doctors' });
+              scrollTo(0, 0);
+            }}
+            className='bg-[#EAEFFF] cursor-pointer text-gray-600 px-12 py-3 rounded-full mt-10'>
+            more
+          </button>
         </div>
         {/* Homepage Banner */}
         <div className='bg-[#5F6FFF] rounded-lg flex px-6 sm:px-10 lg:px-12 my-20 md:mx-10 '>
           {/* Right side */}
           <div className='flex-1 py-8 sm:py-10 md:py-16 lg:py-24 lg:pl-5'>
             <div className="className='!text-white sm:text-2xl md:text-3xl lg:text-5xl font-semibold text-xl">
-              <p>Book Appointment</p> 
+              <p>Book Appointment</p>
               <p className='!mt-4'> With 100+ Trusted Doctors</p>
             </div>
-            
-             <button 
-              onClick={() => { navigate("/login") ; scrollTo(0, 0)}} 
+
+            <button
+              onClick={() => {
+                navigate({ to: '/register' });
+                scrollTo(0, 0);
+              }}
+
               className='bg-white text-sm sm:text-base cursor-pointer text-[#595959] px-8 py-3 rounded-full mt-6 hover:scale-105 transition-all '
             >
               Create account
             </button>
           </div>
           <div className='hidden md:block md:w-1/2 lg:w-[370px] relative'>
-                <img 
-                  className='w-full absolute bottom-0 right-0 max-w-md' 
-                  src={assets.appointment_img} 
-                  alt="" 
-                />
+            <img
+              className='w-full absolute bottom-0 right-0 max-w-md'
+              src={assets.appointment_img}
+              alt=""
+            />
           </div>
         </div>
         {/* Footer */}
         <div className='md:mx-10'>
           <div className='flex flex-col sm:grid grid-cols-[3fr_1fr_1fr] gap-14 my-10  mt-40 text-sm'>
             <div className=''>
-              <img 
-                onClick={() => navigate({ to: '/' })} 
-                className='mb-10 w-44 cursor-pointer' 
+              <img
+                onClick={() => {
+                  navigate({ to: '/' })
+                }}
+                className='mb-10 w-44 cursor-pointer'
                 src={assets.logo}
                 alt="Logo"
               />
@@ -119,7 +137,7 @@ function Home() {
               </p>
             </div>
             <div>
-             <p className='text-xl font-medium mb-5'>COMPANY</p>
+              <p className='text-xl font-medium mb-5'>COMPANY</p>
               <ul className='flex flex-col gap-2 text-gray-600'>
                 <li>Home</li>
                 <li>About us</li>
@@ -130,13 +148,13 @@ function Home() {
 
             <div>
               <p className='text-xl font-medium mb-5'>GET IN TOUCH</p>
-          <ul className='flex flex-col gap-2 text-gray-600'>
-            <li>+91-8468938745</li>
-            <li>vasuparashar18@gmail.com</li>
-          </ul>
-            </div>
+              <ul className='flex flex-col gap-2 text-gray-600'>
+                <li>+91-8468938745</li>
+                <li>vasuparashar18@gmail.com</li>
+              </ul>
             </div>
           </div>
+        </div>
       </div>
 
 

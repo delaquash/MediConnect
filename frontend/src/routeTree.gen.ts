@@ -9,10 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as MyprofileRouteImport } from './routes/myprofile'
 import { Route as MyappointmentRouteImport } from './routes/myappointment'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as CreateAccountRouteImport } from './routes/createAccount'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AppointmentsRouteImport } from './routes/appointments'
 import { Route as AboutRouteImport } from './routes/about'
@@ -21,6 +21,11 @@ import { Route as DoctorsIndexRouteImport } from './routes/doctors/index'
 import { Route as DoctorsSpecialityRouteImport } from './routes/doctors/$speciality'
 import { Route as AppointmentDocIdRouteImport } from './routes/appointment/$docId'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyprofileRoute = MyprofileRouteImport.update({
   id: '/myprofile',
   path: '/myprofile',
@@ -34,11 +39,6 @@ const MyappointmentRoute = MyappointmentRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CreateAccountRoute = CreateAccountRouteImport.update({
-  id: '/createAccount',
-  path: '/createAccount',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -82,10 +82,10 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/appointments': typeof AppointmentsRoute
   '/contact': typeof ContactRoute
-  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
+  '/register': typeof RegisterRoute
   '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
   '/doctors': typeof DoctorsIndexRoute
@@ -95,10 +95,10 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/appointments': typeof AppointmentsRoute
   '/contact': typeof ContactRoute
-  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
+  '/register': typeof RegisterRoute
   '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
   '/doctors': typeof DoctorsIndexRoute
@@ -109,10 +109,10 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/appointments': typeof AppointmentsRoute
   '/contact': typeof ContactRoute
-  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
+  '/register': typeof RegisterRoute
   '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
   '/doctors/': typeof DoctorsIndexRoute
@@ -124,10 +124,10 @@ export interface FileRouteTypes {
     | '/about'
     | '/appointments'
     | '/contact'
-    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
+    | '/register'
     | '/appointment/$docId'
     | '/doctors/$speciality'
     | '/doctors'
@@ -137,10 +137,10 @@ export interface FileRouteTypes {
     | '/about'
     | '/appointments'
     | '/contact'
-    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
+    | '/register'
     | '/appointment/$docId'
     | '/doctors/$speciality'
     | '/doctors'
@@ -150,10 +150,10 @@ export interface FileRouteTypes {
     | '/about'
     | '/appointments'
     | '/contact'
-    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
+    | '/register'
     | '/appointment/$docId'
     | '/doctors/$speciality'
     | '/doctors/'
@@ -164,10 +164,10 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AppointmentsRoute: typeof AppointmentsRoute
   ContactRoute: typeof ContactRoute
-  CreateAccountRoute: typeof CreateAccountRoute
   LoginRoute: typeof LoginRoute
   MyappointmentRoute: typeof MyappointmentRoute
   MyprofileRoute: typeof MyprofileRoute
+  RegisterRoute: typeof RegisterRoute
   AppointmentDocIdRoute: typeof AppointmentDocIdRoute
   DoctorsSpecialityRoute: typeof DoctorsSpecialityRoute
   DoctorsIndexRoute: typeof DoctorsIndexRoute
@@ -175,6 +175,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/myprofile': {
       id: '/myprofile'
       path: '/myprofile'
@@ -194,13 +201,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/createAccount': {
-      id: '/createAccount'
-      path: '/createAccount'
-      fullPath: '/createAccount'
-      preLoaderRoute: typeof CreateAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -260,10 +260,10 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AppointmentsRoute: AppointmentsRoute,
   ContactRoute: ContactRoute,
-  CreateAccountRoute: CreateAccountRoute,
   LoginRoute: LoginRoute,
   MyappointmentRoute: MyappointmentRoute,
   MyprofileRoute: MyprofileRoute,
+  RegisterRoute: RegisterRoute,
   AppointmentDocIdRoute: AppointmentDocIdRoute,
   DoctorsSpecialityRoute: DoctorsSpecialityRoute,
   DoctorsIndexRoute: DoctorsIndexRoute,
