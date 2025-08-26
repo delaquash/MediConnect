@@ -307,3 +307,5 @@ export const doctors = [
         }
     },
 ]
+
+export { appointment_img }
