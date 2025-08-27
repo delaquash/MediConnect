@@ -27,7 +27,7 @@ function Login() {
           </div> 
           <p className='!mt-[11px] text-xl text-[#4B5563] font-semibold' >Don't have an account? 
                 <Link
-                  to='/createAccount'
+                  to='/register'
                   className='!ml-[6px] !text-[#5F6FFF] !underline !cursor-pointer text-xl'
                 >Sign Up</Link> 
             </p>
