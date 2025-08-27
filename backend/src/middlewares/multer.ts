@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
     }
 });
 
-// File filter function to validate file types
+
 const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: FileFilterCallback) => {
     // Define allowed file extensions using regex
     const allowedTypes = /jpeg|jpg|png|gif|pdf/;
@@ -34,9 +34,9 @@ const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: FileFil
 
 // Create multer instance with configuration
 const upload = multer({ 
-    storage,                                    // Use the disk storage configuration
-    fileFilter,                                 // Apply file type validation
-    limits: { fileSize: 5 * 1024 * 1024 }     // Limit file size to 5MB
+    storage,                                    
+    fileFilter,                              
+    limits: { fileSize: 5 * 1024 * 1024 }     
 });
 
 export default upload;
