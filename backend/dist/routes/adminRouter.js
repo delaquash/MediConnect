@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const adminController_1 = require("../controllers/adminController");
+const multer_1 = __importDefault(require("../middlewares/multer"));
+const authAdmin_1 = __importDefault(require("../middlewares/authAdmin"));
+const doctorController_1 = require("../controllers/doctorController");
+// import { changeAvailability } from "../controllers/doctorController";
+const adminRouter = express_1.default.Router();
+adminRouter.post("/add-doctor", authAdmin_1.default, multer_1.default.single("image"), adminController_1.addDoctor);
+adminRouter.post("/login", adminController_1.loginAdmin);
+adminRouter.get("/all-doctors", authAdmin_1.default, adminController_1.allDoctors);
+adminRouter.post("/change-availability", authAdmin_1.default, doctorController_1.changeAvailability);
+adminRouter.get("/appointments", authAdmin_1.default, adminController_1.appointmentsAdmin);
+adminRouter.post("/cancel-appointment", authAdmin_1.default, adminController_1.appointmentCancel);
+adminRouter.get("/dashboard", authAdmin_1.default, adminController_1.adminDashboard);
+exports.default = adminRouter;

@@ -1,17 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-// Define custom interface extending Request
 interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
-// Define the structure of expected token payload
+
 interface JwtPayload {
   id: string;
 }
 
-// User authentication middleware
+
 const authUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { token } = req.headers as { token?: string };

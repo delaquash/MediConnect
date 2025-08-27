@@ -1,16 +1,15 @@
-
 import { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
-import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
-import { PopulatedAppointment } from "../types/type"
+import { validateProfileData } from '../helper/validateProfileData';
+import { v2 as cloudinary } from 'cloudinary';
 
 const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        // ✅ Add safety check for req.body
+
         if (!req.body) {
             res.status(400).json({
                 success: false,
@@ -21,7 +20,7 @@ const changeAvailability = async (req: Request, res: Response, next: NextFunctio
 
         const { docId } = req.body;
         
-        // Validate that docId is provided
+        
         if (!docId) {
             res.status(400).json({
                 success: false,
@@ -29,11 +28,10 @@ const changeAvailability = async (req: Request, res: Response, next: NextFunctio
             });
             return;
         }
-        
-        // Find doctor first to get current availability status
+  
         const doctor = await DoctorModel.findById(docId);
         
-        // Check if doctor exists
+   
         if (!doctor) {
             res.status(404).json({
                 success: false,
@@ -42,7 +40,7 @@ const changeAvailability = async (req: Request, res: Response, next: NextFunctio
             return;
         }
         
-        // Calculate new availability status
+ 
         const newAvailability = !doctor.available;
         
         // Update doctor's availability
@@ -52,7 +50,7 @@ const changeAvailability = async (req: Request, res: Response, next: NextFunctio
             { new: true }
         );
         
-        // Send success response
+
         res.status(200).json({
             success: true,
             message: `Doctor availability ${newAvailability ? 'enabled' : 'disabled'} successfully`,
@@ -79,16 +77,16 @@ const doctorList = async (req: Request, res: Response, next: NextFunction): Prom
 }
 const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        // ✅ Add safety check for req.body
+
         if (!req.body) {
-            console.log(req.body); // Debug log
+
             res.status(400).json({
                 success: false,
                 message: "Request body is required"
             });
             return;
         }
-        // Validate that email and password are provided
+
         const { email, password } = req.body
 
         if (!email || !password) {
@@ -118,8 +116,8 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
 
 const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // FIXED: Use req.docId instead of req.userId for doctor authentication
-    const doctorId = req.docId; // From doctor auth middleware
+
+    const doctorId = req.docId; 
     
     // Validate doctor ID format
     if (!doctorId || !mongoose.Types.ObjectId.isValid(doctorId)) {
@@ -136,7 +134,7 @@ const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Respo
     // Build query filter
     const filter: any = { 
       docId: doctorId,
-      cancelled: false, // Only non-cancelled appointments
+      cancelled: false, 
       slotDate: { 
         $gte: new Date().toISOString().split('T')[0] // Future and today's appointments
       }
@@ -158,7 +156,7 @@ const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Respo
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
     
-    // Fetch appointments with population and sorting
+    
     const appointments = await AppointmentModel.find(filter)
       .populate('userId', 'name phone email') // Populate user details
       .sort({ slotDate: 1, slotTime: 1 }) // Sort by date and time
@@ -172,10 +170,8 @@ const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Respo
     const formattedAppointments = appointments.map(apt => ({
       appointmentId: apt._id,
       patient: {
-        // id: apt.userId?._id,
         name: apt.userData.name,
         phone: apt.userData.phone,
-        // email: apt.userId.email,
         address: apt.userData.address
       },
       appointment: {
@@ -229,7 +225,7 @@ const doctorCancelAppointment = async (req: any, res: Response, next: NextFuncti
       // Find appointment belonging to this doctor
       const appointment = await AppointmentModel.findOne({
         _id: appointmentId,
-        docId: doctorId,           // Ensure doctor owns this appointment
+        docId: doctorId,           
         cancelled: false
       }).session(session);
       
@@ -246,7 +242,7 @@ const doctorCancelAppointment = async (req: any, res: Response, next: NextFuncti
         appointmentId,
         { 
           cancelled: true,
-          cancelledBy: 'doctor',    // Track who cancelled
+          cancelledBy: 'doctor',    
           cancellationReason: reason
         },
         { session }
@@ -328,7 +324,7 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction): 
       return;
     }
     
-    const appointmentDetails = await appointmentModel.findByIdAndUpdate(appointmentId, {
+    const appointmentDetails = await AppointmentModel.findByIdAndUpdate(appointmentId, {
       isCompleted: true,
     });
     
@@ -345,10 +341,8 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction): 
 }
 const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
      try {
-    // Get doctor ID from doctor auth middleware (secure)
     const authenticatedDoctorId = req.docId;
     
-    // Validate doctor ID format before querying database
     if (!mongoose.Types.ObjectId.isValid(authenticatedDoctorId)) {
       res.status(400).json({
         success: false,
@@ -357,7 +351,6 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
       return;
     }
     
-    // Verify doctor exists in database
     const doctor = await DoctorModel.findById(authenticatedDoctorId);
     if (!doctor) {
       res.status(404).json({
@@ -367,8 +360,7 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
       return;
     }
     
-    // Fetch all appointments for this doctor
-    const appointments = await appointmentModel.find({ 
+    const appointments = await AppointmentModel.find({ 
       docId: authenticatedDoctorId
     }).populate('userId', 'name email phone');
     
@@ -411,7 +403,7 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
         paymentStatus: apt.payment ? 'paid' : 'pending'
       }));
     
-    // Prepare comprehensive dashboard data
+
     const dashData = {
       earnings,
       totalAppointments: appointments.length,
@@ -451,9 +443,8 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
 
 const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // FIXED: Get doctor ID directly from req.docId (not destructured)
-    const doctorId = req.docId; // This is the authenticated doctor ID from middleware
-    
+
+    const doctorId = req.docId; 
     // Validate doctor ID format
     if (!doctorId || !mongoose.Types.ObjectId.isValid(doctorId)) {
       res.status(400).json({
@@ -474,7 +465,6 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
       return;
     }
     
-    // Return formatted doctor profile
     res.status(200).json({
       success: true,
       message: "Doctor profile retrieved successfully",
@@ -511,7 +501,205 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
   }
 };
 
-const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const docId = req.docId
+    const imageFile = req.file;
+    const {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
+
+    if(!docId){
+      res.status(401).json({
+        success: false,
+        message: "Doctor does not exist"
+      });
+      return;
+    }
+
+    const errors = validateProfileData({ name, phone, image, specialty, degree, experience, about, fees, address}, false)
+    if (errors && errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Profile validation failed",
+        errors
+      });
+      return;
+    }
+
+    const doc = await DoctorModel.findById(docId);
+    if(!doc){
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      })
+      return
+    }
+    // image, specialty, degree, experience, about, fees, address } = req.body;
+  const updateDocData: any = {}
+
+  if( name !== undefined) updateDocData.name = name.trim();
+  if(phone !== undefined) updateDocData.phone = phone.trim();
+  if(specialty !== undefined) updateDocData.specialty = specialty.trim();
+  if(degree !== undefined) updateDocData.degree = degree.trim();
+  if(experience !== undefined) updateDocData.experience = experience.trim();
+  if(about !== undefined) updateDocData.about = about.trim();
+  if(fees !== undefined) updateDocData.fees = fees;
+  if(address !== undefined) updateDocData.address = address.trim();
+
+  // cloudinary to handle image upload
+  if (imageFile) {
+        try {
+          
+          const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
+        
+          const result = await cloudinary.uploader.upload(fileStr, {
+            folder: 'doctors-profiles',
+            resource_type: 'auto',
+            transformation: [
+              { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+              { quality: 'auto:good' }
+            ]
+          });
+          
+          updateDocData.image = result.secure_url;
+        } catch (uploadError) {
+          console.error("Image upload error:", uploadError);
+          res.status(500).json({
+            success: false,
+            message: "Failed to upload image"
+          });
+          return;
+        }
+      }
+
+      const updatedDocTemp ={ ...doc.toObject(), ...updateDocData}
+
+      // check if all required fields are now present
+      const isProfileComplete = ["image", "specialty", "degree", "experience", "about", "fees", "address"].every(field=>{
+        const value = field.split('.').reduce((obj, key) => obj?.[key], updatedDocTemp);
+        return value !== null && value !== undefined && value !== '';
+      })
+
+      // if profile wasnt complete before, but it is now complete, mark it 
+      if(isProfileComplete && !doc.profileComplete) {
+        updateDocData.profileComplete = true
+        updateDocData.profileCompletedAt = new Date()
+      }
+
+      const updatedDocProfile = await DoctorModel.findByIdAndUpdate(
+        docId,
+        updateDocData,
+        {
+          new: true,
+          runValidators: true
+        }
+      ).select("-password")
+      res.status(200).json({
+      success: true,
+      message: "Doctors Profile updated successfully",
+      user: updatedDocProfile
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+const completeDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+   const docId = req.docId
+    const imageFile = req?.file;
+    const {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
+
+    if(!docId){
+      res.status(401).json({
+        success: false,
+        message: "Doctor does not exist"
+      });
+      return;
+    }
+
+    const errors = validateProfileData({ name, phone, image, specialty, degree, experience, about, fees, address}, false)
+    if (errors && errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Profile validation failed",
+        errors
+      });
+      return;
+    }
+
+    const doc = await DoctorModel.findById(docId);
+    if(!doc){
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      })
+      return
+    }
+
+    if(doc?.profileComplete){
+        res.status(400).json({
+        success: false,
+        message: "Profile is already complete. Kindly update profile"
+      })
+      return
+    }
+
+    // prepare update data 
+    const docProfileDataUpDate: any= {
+      phone: phone.trim(),
+      specialty: specialty.trim(),
+      degree: degree.trim(),
+      experience: experience.trim(),
+      about:about.trim(),
+      address: address.trim(),
+      
+      profileComplete: true,
+      profileCompletedAt: new Date()
+    }
+
+      if (imageFile) {
+        try {
+          
+          const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
+        
+          const result = await cloudinary.uploader.upload(fileStr, {
+            folder: 'doctors-profiles',
+            resource_type: 'auto',
+            transformation: [
+              { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+              { quality: 'auto:good' }
+            ]
+          });
+          
+          docProfileDataUpDate.image = result.secure_url;
+        } catch (uploadError) {
+          console.error("Image upload error:", uploadError);
+          res.status(500).json({
+            success: false,
+            message: "Failed to upload image"
+          });
+          return;
+        }
+      }
+
+      const completeDocProfile = await DoctorModel.findByIdAndUpdate(
+        docId,
+        docProfileDataUpDate, 
+        {
+          new: true, 
+          runValidators: true
+        }
+      ).select("-password")
+
+       res.status(200).json({
+          success: true,
+          message: "Profile completed successfully. Please proceed to accepting appointment",
+          doctor: completeDocProfile
+        })
+  } catch (error) {
+    
+  }
+}
 
 export {
     changeAvailability,
@@ -523,5 +711,5 @@ export {
     doctorsDashboard,
     getDoctorProfile,
     updateDoctorProfile,
-    
+    completeDoctorProfile
 }

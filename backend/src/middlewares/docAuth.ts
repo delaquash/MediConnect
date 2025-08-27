@@ -2,23 +2,21 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import DoctorModel from "../model/doctorModel";
 
-// Define the structure of the JWT payload
+
 interface JwtPayload {
   id: string;
-  // You can add more fields here if needed
+  
 }
-// TypeScript interface for authenticated doctor requests
+
 export interface AuthenticatedDoctorRequest extends Request {
-  docId?: string;           // Doctor's ID from JWT token
-  doctor?: any;            // Optional: Full doctor document
+  docId?: string;           
+  doctor?: any;         
 }
-// Doctor authentication middleware
+
 const authDoctor = async (req: any | AuthenticatedDoctorRequest, res: Response, next: NextFunction) => {
   try {
-    // Extract the doctor's token from headers
     const { dtoken } = req.headers as { dtoken?: string };
-    
-    // If no token is provided
+
     if (!dtoken) {
       res.status(401).json({
         success: false,
@@ -26,11 +24,9 @@ const authDoctor = async (req: any | AuthenticatedDoctorRequest, res: Response, 
       });
       return;
     }
-    
-    // Ensure JWT_SECRET is defined
+
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      // Don't expose internal errors to client
       console.error("JWT_SECRET is not defined in environment variables");
       res.status(500).json({
         success: false,
@@ -39,15 +35,11 @@ const authDoctor = async (req: any | AuthenticatedDoctorRequest, res: Response, 
       return;
     }
     
-    // Verify token
     const decoded = jwt.verify(dtoken, jwtSecret);
     
-    // Type guard: Ensure decoded is an object with an `id` property
     if (typeof decoded === "object" && decoded !== null && "id" in decoded) {
-      // FIXED: Attach to req object, not req.body (security issue)
-      req.docId = (decoded as JwtPayload).id; // Attach doctor ID to request object
+      req.docId = (decoded as JwtPayload).id; 
       
-      // Optional: Validate that the doctor still exists and is active
       const doctor = await DoctorModel.findById(req.docId);
       if (!doctor) {
         res.status(401).json({
@@ -65,10 +57,9 @@ const authDoctor = async (req: any | AuthenticatedDoctorRequest, res: Response, 
         return;
       }
       
-      // Optional: Attach full doctor info for use in controllers
       req.doctor = doctor;
       
-      next(); // Proceed to next middleware/controller
+      next();
     } else {
       res.status(401).json({
         success: false,
@@ -79,7 +70,6 @@ const authDoctor = async (req: any | AuthenticatedDoctorRequest, res: Response, 
   } catch (error: any) {
     console.error("AuthDoctor Error:", error.message);
     
-    // Handle specific JWT errors with appropriate messages
     if (error.name === 'JsonWebTokenError') {
       res.status(401).json({
         success: false,
@@ -95,8 +85,7 @@ const authDoctor = async (req: any | AuthenticatedDoctorRequest, res: Response, 
       });
       return;
     }
-    
-    // Generic error for unexpected issues
+
     res.status(401).json({
       success: false,
       message: "Authentication failed"
