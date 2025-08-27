@@ -40,9 +40,14 @@ function Appointment() {
             <p className='text-gray-600 font-medium mt-4'>Appointment fee: <span className='text-gray-800'>#70,000</span> </p>
           </div>
         </div>
-        
       </div>
       {/* Booking slot */}
+      <div className='sm:ml-72 sm:pl-4 mt-8 font-medium text-[#565656] text-2xl'>
+        <p>Booking Slot</p>
+        <div className="">
+          
+        </div>
+      </div>
     </>
   )
 }
