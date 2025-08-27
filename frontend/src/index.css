@@ -4,7 +4,9 @@
 * {
   font-family: Outfit;
 }
-
+.bg-primary {
+  background-color: #5F6FFF !important;
+}
 /* Temporary test - add this */
 .test-bg {
   background-color: #ef4444 !important;
