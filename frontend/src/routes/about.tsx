@@ -15,6 +15,7 @@ function About() {
           <img 
             src={assets.about_us}
 
+            
           />
         </div>
         <div className='w-3/4'>
