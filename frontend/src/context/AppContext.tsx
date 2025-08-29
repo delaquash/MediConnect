@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import axios from 'axios';
-
+// const backendUrl = import.meta.env.VITE_BACKEND_URL;
 // Types
 interface Doctor {
   _id: string;
@@ -45,7 +45,7 @@ interface AppContextType {
 
 // Create context for non-server state only
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
+// const backendUrl = import.meta.env.VITE_BACKEND_URL;
 // Custom hook to use the context
 export const useAppContext = () => {
   const context = useContext(AppContext);
@@ -59,7 +59,7 @@ export const useAppContext = () => {
 export const api = {
   // login user
   loginUser: async (backendUrl: string, email: string, password: string) => {
-    const { data } = await axios.post(`${backendUrl}/login`, {
+    const { data } = await axios.post("https://mediconnect-jp6p.onrender.com/user/login", {
       email,
       password
     })
@@ -67,6 +67,10 @@ export const api = {
       throw new Error(data.message)
     }
 
+  if (!data.userData) {
+    console.error('userData is undefined in response:', data);
+    throw new Error('User data not found in response');
+  }
     return data
   },
   

@@ -2,11 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, useAppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
 import { useNavigate } from "@tanstack/react-router";
-
+    // console.log(VITE_BACKEND_URL)
 // login custom hooks
   export const useLogin = ()=> {
     const navigate = useNavigate()
     const { backendUrl, setToken } = useAppContext()
+    console.log(backendUrl)
     const queryClient = useQueryClient();
 
     return useMutation<any, Error, {email: string, password: string}>({
@@ -25,6 +26,7 @@ import { useNavigate } from "@tanstack/react-router";
 
 //   register hook
 export const useRegister = () => {
+     const navigate = useNavigate()
     const { backendUrl } = useAppContext()
 
     return useMutation<any, Error, { name: string; email: string; password: string }>({
