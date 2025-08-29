@@ -56,7 +56,33 @@ export const useAppContext = () => {
 };
 
 // API functions with proper typing
-const api = {
+export const api = {
+  // login user
+  loginUser: async (backendUrl: string, email: string, password: string) => {
+    const { data } = await axios.post(`${backendUrl}/login`, {
+      email,
+      password
+    })
+    if(!data.success){
+      throw new Error(data.message)
+    }
+
+    return data
+  },
+  
+  // register user
+  registerUser:async (backendUrl: string, email: string, password: string, name: string)=>{
+    const { data } = await axios.post(`${backendUrl}/register`, {
+      name,
+      email,
+      password
+    })
+    if(!data.success){
+      throw new Error(data.message)
+    }
+
+    return data
+  },
   getDoctors: async (backendUrl: string): Promise<Doctor[]> => {
     const { data } = await axios.get(`${backendUrl}/doctor/list`);
     if (!data.success) {
