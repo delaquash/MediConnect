@@ -107,7 +107,8 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
            res.status(200).json({
                 success: true,
                 message: "Login successful",
-               token
+               token,
+               doctor
             });
     } catch (error) {
         next(error);
