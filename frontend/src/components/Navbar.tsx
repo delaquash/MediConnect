@@ -27,7 +27,7 @@ const Navbar = () => {
     setToken("")
   }
   return (
-    <nav className=" !flex !items-center !justify-between !text-sm !py-4 !mb-5 !border-b !border-b-[#ADADAD]">
+    <nav className=" flex items-center justify-between text-sm py-4 mb-5 border-b border-b-[#ADADAD]">
       {/* logo */}
       <img 
       onClick={() => navigate({ to: '/' })} 
@@ -37,16 +37,16 @@ const Navbar = () => {
       />
 
       {/* <div> */}
-        <ul className='md:flex items-start gap-5 font-medium hidden'>
+        <ul className='!md:flex !items-start !gap-5 !font-medium'>
          {navItems.map((nav, index:number)=>(
           <Link
             key={index}
             to={nav.path}
-            className="[&.active]:!text-[#1F2937]"
+            className="[&.active]:text-[#1F2937]"
           >
-            <li className='!py-1'> {nav.label}</li>
+            <li className='py-1'> {nav.label}</li>
             <hr 
-              className={`border-none outline-none !bg-blue-600 w-full m-auto transition-opacity ${
+              className={`border-none outline-none bg-blue-600 w-full m-auto transition-opacity ${
                 isActiveLink(nav.path) ? 'opacity-100' : 'opacity-0'
               }`} 
             />
@@ -57,8 +57,8 @@ const Navbar = () => {
 
       <div className='flex items-center gap-4 '>
         {/* if account exist, token is stored and with token user should see something different */}
-        {token && userData ? 
-          (
+         {token && userData ? 
+          ( 
             <div className='flex items-center gap-2 cursor-pointer group relative '>
               { isLoading  ? 
               (

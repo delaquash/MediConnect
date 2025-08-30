@@ -234,8 +234,8 @@ const loginUser = async (req: Request, res: Response, next: NextFunction): Promi
     res.status(200).json({
       success: true,
       message: "User login successfully",
-      token
-      ,
+      token,
+      user
     })
   } catch (error) {
     next(error)
