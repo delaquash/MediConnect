@@ -7,7 +7,6 @@ import { useNavigate } from "@tanstack/react-router";
   export const useLogin = ()=> {
     const navigate = useNavigate()
     const { backendUrl, setToken } = useAppContext()
-    console.log(backendUrl)
     const queryClient = useQueryClient();
 
     return useMutation<any, Error, {email: string, password: string}>({

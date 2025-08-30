@@ -45,7 +45,7 @@ interface AppContextType {
 
 // Create context for non-server state only
 const AppContext = createContext<AppContextType | undefined>(undefined);
-// const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
 // Custom hook to use the context
 export const useAppContext = () => {
   const context = useContext(AppContext);
@@ -60,17 +60,18 @@ export const api = {
   // login user
   loginUser: async (backendUrl: string, email: string, password: string) => {
     const { data } = await axios.post("https://mediconnect-jp6p.onrender.com/user/login", {
+      // const { data } = await axios.post(`${backendUrl}/user/login`, {
       email,
       password
     })
     if(!data.success){
       throw new Error(data.message)
     }
-
-  if (!data.userData) {
-    console.error('userData is undefined in response:', data);
-    throw new Error('User data not found in response');
-  }
+    // console.log(data)
+  // if (!data.userData) {
+  //   console.error('userData is undefined in response:', data);
+  //   throw new Error('User data not found in response');
+  // }
     return data
   },
   
@@ -85,7 +86,7 @@ export const api = {
       throw new Error(data.message)
     }
 
-    return data
+    return data.user
   },
   getDoctors: async (backendUrl: string): Promise<Doctor[]> => {
     const { data } = await axios.get(`${backendUrl}/doctor/list`);
@@ -102,7 +103,7 @@ export const api = {
     if (!data.success) {
       throw new Error(data.message);
     }
-    return data?.userData;
+    return data?.userProfile;
   }
 };
 
@@ -213,7 +214,7 @@ export const useBookAppointment = () => {
 const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
   const queryClient = useQueryClient();
   const currencySymbol = '₹';
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+   const backendUrl = import.meta.env.VITE_BACKEND_URL as string;
   const [token, setTokenState] = useState(
     localStorage.getItem('token') || ''
   );

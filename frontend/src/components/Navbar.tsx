@@ -7,10 +7,9 @@ const Navbar = () => {
   const navigate = useNavigate()
     const location = useLocation()
     const [showMenu, setShowMenu] = useState(false)
-
     const { token, setToken, logout } = useAppContext()
-    const  { data: userData, isLoading } = useUserProfile()
-  // Navigation items
+    const  { data: user, isLoading } = useUserProfile()
+
   const navItems = [
     { path: '/', label: 'HOME' },
     { path: '/doctors', label: 'ALL DOCTORS' },
@@ -48,7 +47,7 @@ const Navbar = () => {
          <span
         className={`absolute left-0 bottom-0 h-[2px] w-full bg-blue-600 transition-transform duration-300 
           ${isActiveLink(nav.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}
-      />
+        />
       
           </Link>
          ))}
@@ -57,7 +56,7 @@ const Navbar = () => {
 
       <div className='flex items-center gap-4 '>
         {/* if account exist, token is stored and with token user should see something different */}
-        {token && userData ? 
+        {token && user? 
           (
             <div className='flex items-center gap-2 cursor-pointer group relative '>
               { isLoading  ? 
@@ -66,16 +65,22 @@ const Navbar = () => {
               ) :
               (
                 <img 
-                  src={userData?.image }
+                  src={user?.image || "https://res.cloudinary.com/delaquarsh/image/upload/v1718717616/w1wushxqt2aorazppexq.jpg" }
                   className='w-8 rounded-full'
                   alt='User Image'
                 />
               )
             }
-            <img  className='w-2.5' alt='Dropdown' src={assets.dropdown_icon}  />
+            <img  
+              className='w-2.5' 
+              alt='Dropdown' 
+              src={assets.dropdown_icon}  
+              onClick={() => setShowMenu(!showMenu)}
+            />
 
             {/* Dropdown Menu */}
-            <div className='absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:hidden'>
+            {showMenu && (
+              <div className='absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:hidden'>
               <div className='min-w-48 bg-[#F8F8F8] flex flex-col rounded font-bold text-[#4B5563] gap-4 p-4 shadow-lg'>
                 <Link
                   className='hover:text-black cursor-pointer transition-colors' 
@@ -97,6 +102,7 @@ const Navbar = () => {
                 </p>
               </div>
             </div>
+            )}
             </div>
           ) :(
               <button 
@@ -105,7 +111,7 @@ const Navbar = () => {
           >
             Create account
           </button>
-          )}
+          )} 
       </div>
     </nav>
   )
