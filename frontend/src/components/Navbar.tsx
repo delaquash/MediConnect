@@ -9,7 +9,7 @@ const Navbar = () => {
   const [showMenu, setShowMenu] = useState(false)
   const { token, setToken, logout } = useAppContext()
   const  { data: user, isLoading } = useUserProfile()
-
+  const dropDownMenuRef = useRef<HTMLDivElement>(null)
   
     const navItems = [
     { path: '/', label: 'HOME' },
@@ -26,7 +26,7 @@ const Navbar = () => {
     logout()
     setToken("")
   }  
-  const dropDownMenuRef = useRef<HTMLDivElement>(null)
+  
   useEffect(()=> {
     const handleClickOutside = (e:MouseEvent) => {
       if(dropDownMenuRef.current && !dropDownMenuRef.current.contains(e.target as Node)){
@@ -80,7 +80,7 @@ const Navbar = () => {
 
             {/* Dropdown toggle (image as button) */}
             <div className="relative" 
-            // ref={menuRef}
+            ref={dropDownMenuRef}
             >
               <img
                 src={assets.dropdown_icon}
