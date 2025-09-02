@@ -40,3 +40,9 @@ export const useRegister = () => {
         },
     })
 }
+
+// update profile hook
+
+export const updateUserProfileHook =() => {
+  const {backendUrl, token } = useAppContext()
+}
