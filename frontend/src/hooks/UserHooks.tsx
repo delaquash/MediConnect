@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, useAppContext } from "../context/AppContext";
+import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useNavigate } from "@tanstack/react-router";
 import axios from "axios";
+import { api, useAppContext } from "../context/AppContext";
 
 interface UserData {
   _id: string;
@@ -57,8 +57,21 @@ export const useRegister = () => {
     })
 }
 
-// update profile hook
+// get user profile
+export const useUserProfile = (): UseQueryResult<UserData, Error> => {
+  const { backendUrl, token } = useAppContext();
+  
+  return useQuery<UserData, Error>({
+    queryKey: ['userProfile', token],
+    queryFn: () => api.getUserProfile(backendUrl, token),
+    enabled: !!token, // Only run if token exists
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
 
+
+// update profile hook
 export const useUpdateUserProfile = () => {
   const { backendUrl, token } = useAppContext();
   const queryClient = useQueryClient();

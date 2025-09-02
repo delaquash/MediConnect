@@ -1,11 +1,69 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
+import { toast } from 'react-toastify'
+import { useUpdateUserProfile, useUserProfile } from '../hooks/UserHooks'
+import { useAppContext } from '../context/AppContext'
 
 export const Route = createFileRoute('/myprofile')({
   component: MyProfile,
 })
 
 function MyProfile() {
-  
+  // get user data
+  const { data: userProfileData, isLoading: isLoadingUserProfile, error } = useUserProfile()
+  const updateProfileMutation = useUpdateUserProfile();
+  const { token } = useAppContext()
+  const [isEdit, setIsEdit ] = useState(false)
+  const [image, setImage] = useState<File |  null>(null)
+  const [editData, setEditData] = useState({
+    name:"",
+    phone:"",
+    address:{
+      line1: "",
+      line2: ""
+    },
+    gender:"",
+    dob:""
+  })
+
+  const startEdit = () => {
+    if(userProfileData){
+      setEditData({
+        name: userProfileData.name || "",
+        phone: userProfileData.phone || "",
+        address:{
+          line1: userProfileData.address?.line1 || "",
+          line2: userProfileData.address?.line2 || ""
+        },
+        gender:userProfileData.gender,
+        dob: userProfileData.dob
+      })
+    }
+  }
+  // handle Profile Update
+  const handleProfileUpdate = async() => {
+    try {
+      const formData = new FormData()
+      formData.append('name', editData.name)
+      formData.append('phone', editData.phone)
+      formData.append('address', JSON.stringify(editData.address))
+      formData.append('gender', editData.gender)
+      formData.append('dob', editData.dob)
+
+      if (image) {
+        formData.append('image', image)
+      }
+
+      await updateProfileMutation.mutateAsync(formData)
+
+      // reset state when edit is successfull
+      setIsEdit(false)
+      setImage(null)
+
+    } catch (error) {
+      console.error('Update failed:', error)
+    }
+  }
   return (
     <div className='max-w-lg flex flex-col gap-2 text-sm-pt-5'>
       <label htmlFor="image">

@@ -118,17 +118,6 @@ export const useDoctors = (): UseQueryResult<Doctor[], Error> => {
   });
 };
 
-export const useUserProfile = (): UseQueryResult<UserData, Error> => {
-  const { backendUrl, token } = useAppContext();
-  
-  return useQuery<UserData, Error>({
-    queryKey: ['userProfile', token],
-    queryFn: () => api.getUserProfile(backendUrl, token),
-    enabled: !!token, // Only run if token exists
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
 
 
 export const useDoctorsWithErrorHandling = () => {
