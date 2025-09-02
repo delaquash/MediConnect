@@ -152,35 +152,6 @@ export const useDoctorsWithErrorHandling = () => {
   return query;
 };
 
-// Custom hook for mutations
-export const useUpdateUserProfile = () => {
-  const { backendUrl, token } = useAppContext();
-  const queryClient = useQueryClient();
-
-  return useMutation<UserData, Error, Partial<UserData>>({
-    mutationFn: async (userData: Partial<UserData>) => {
-      const { data } = await axios.put(
-        `${backendUrl}/user/update-profile`,
-        userData,
-        { headers: { token } }
-      );
-      if (!data.success) {
-        throw new Error(data.message);
-      }
-      return data.userData;
-    },
-    onSuccess: (userData) => {
-      // Update the cache
-      queryClient.setQueryData(['userProfile', token], userData);
-      toast.success('Profile updated successfully');
-    },
-    onError: (error: Error) => {
-      console.error(error);
-      toast.error(error.message || 'Failed to update profile');
-    },
-  });
-};
-
 // Book appointment mutation
 export const useBookAppointment = () => {
   const { backendUrl, token } = useAppContext();
