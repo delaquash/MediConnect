@@ -54,7 +54,7 @@ function Home({ docId }: any) {
             </div>
           ))}
         </div>
-        {/* Top Doctors to ask */}
+
         <div className='flex flex-col items-center gap-4 my-16 text-[#262626] md:mx-10'>
           <h1 className='text-3xl font-medium'>Top Doctors to Book</h1>
           <p className='sm:w-1/3 mb-10 text-center text-sm'>Simply browse through our extensive list of trusted doctors.</p>
@@ -93,7 +93,7 @@ function Home({ docId }: any) {
             more
           </button>
         </div>
-        {/* Homepage Banner */}
+
         <div className='bg-[#5F6FFF] rounded-lg flex px-6 sm:px-10 lg:px-12 my-20 md:mx-10 '>
           {/* Right side */}
           <div className='flex-1 py-8 sm:py-10 md:py-16 lg:py-24 lg:pl-5'>

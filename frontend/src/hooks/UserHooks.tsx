@@ -72,13 +72,13 @@ export const useUserProfile = (): UseQueryResult<UserData, Error> => {
 
 
 // update profile hook
-export const useUpdateUserProfile = () => {
+export const updateUserProfile = () => {
   const { backendUrl, token } = useAppContext();
   const queryClient = useQueryClient();
 
   return useMutation<UserData, Error, FormData>({
     mutationFn: async (formData: FormData) => {
-      const { data } = await axios.post(
+      const { data } = await axios.put(
         `${backendUrl}/user/update-profile`, 
         formData,
         { 

@@ -73,6 +73,7 @@ const Navbar = () => {
               <img
                 src={
                   user?.image ||
+                    
                   "https://res.cloudinary.com/delaquarsh/image/upload/v1718717616/w1wushxqt2aorazppexq.jpg"
                 }
                 className="w-8 rounded-full"
