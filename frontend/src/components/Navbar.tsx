@@ -1,7 +1,9 @@
 import  { useEffect, useRef, useState } from 'react'
 import { assets } from '../assets/assets'
 import { Link, useNavigate, useLocation } from '@tanstack/react-router'
-import { useAppContext, useUserProfile } from '../context/AppContext'
+import { useAppContext } from '../context/AppContext'
+import { useUserProfile } from '../hooks/UserHooks'
+
 // import { useQueryClient } from '@tanstack/react-query';
 const Navbar = () => {
   const navigate = useNavigate()
