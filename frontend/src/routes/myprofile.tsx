@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'react-toastify'
 import { updateUserProfile, useUserProfile } from '../hooks/UserHooks';
-import { useAppContext } from '../context/AppContext'
 import { assets } from '../assets/assets'
 
 export const Route = createFileRoute('/myprofile')({
@@ -58,7 +57,7 @@ function MyProfile() {
       }
 
       await updateProfileMutation.mutateAsync(formData)
-
+      toast.success("Profile Updated Successfully...")
       // reset state when edit is successfull
       setIsEdit(false)
       setImage(null)

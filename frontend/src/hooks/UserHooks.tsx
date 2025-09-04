@@ -71,6 +71,7 @@ export const useUserProfile = (): UseQueryResult<UserData, Error> => {
 };
 
 
+
 // update profile hook
 export const updateUserProfile = () => {
   const { backendUrl, token } = useAppContext();
@@ -104,3 +105,76 @@ export const updateUserProfile = () => {
     },
   });
 };
+
+// user book appointment hook
+export const userBookAppointment = () => {
+  const { backendUrl, token } = useAppContext();
+  const queryClient = useQueryClient();
+
+  return useMutation<any, Error, { docId: string; slotDate: string; slotTime: string }>({
+    mutationFn: async ({ docId, slotDate, slotTime }) => {
+      const { data } = await axios.post(
+        `${backendUrl}/user/book-appointment`,
+        { docId, slotDate, slotTime },
+        { headers: { token } }
+      );
+      if (!data.success) {
+        throw new Error(data.message);
+      }
+      return data;
+    },
+    onSuccess: () => {
+      // Invalidate appointments query to refetch
+      queryClient.invalidateQueries({ queryKey: ['userAppointment'] });
+      toast.success('Appointment booked successfully');
+    },
+    onError: (error: Error) => {
+      console.error(error);
+      toast.error(error.message || 'Failed to book appointment');
+    },
+  });
+};
+
+// get appointment
+export const userGetAppointment = (): UseQueryResult<any, Error> => {
+  const {backendUrl, token } = useAppContext()
+
+  return useQuery<any, Error>({
+    queryKey: ["userAppointment", token],
+    queryFn:()=> api.getUserAppointment(backendUrl, token),
+    enabled: !!token,
+     staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+// user cancel appointment hook
+export const userCancelAppointment = () => {
+  const { backendUrl, token } = useAppContext();
+  const queryClient = useQueryClient();
+
+  return useMutation<any, Error, { appointmentId: string }>({
+    mutationFn: async ({ appointmentId }) => {
+      const { data } =  await axios.post(`${backendUrl}/user/cancel-appointment`, 
+        {
+        appointmentId
+      }, 
+      {
+        headers: {
+          token
+        }
+      })
+      if(!data.success){
+        throw new Error(data.message)
+      }
+      return data
+    },
+    onSuccess:() => {
+      queryClient.invalidateQueries({ queryKey: ['userAppointment']})
+      toast.success('Appointment cancelled successfully');
+    },
+    onError: (error: Error) => {
+      console.error(error);
+      toast.error(error.message || 'Failed to cancel appointment');
+    },
+  })
+}

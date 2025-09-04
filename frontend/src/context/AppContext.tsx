@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import axios from 'axios';
+
 // const backendUrl = import.meta.env.VITE_BACKEND_URL;
 // Types
 interface Doctor {
@@ -104,6 +105,17 @@ export const api = {
       throw new Error(data.message);
     }
     return data?.userProfile;
+  },
+
+  getUserAppointment: async(backendUrl: string, token: string)=> {
+    const { data } = await axios.get(`${backendUrl}/user/appointments`, {
+      headers:{
+        token
+      }});
+      if(!data.success){
+        throw new Error(data.message)
+      }
+      return data
   }
 };
 
@@ -141,16 +153,17 @@ export const useDoctorsWithErrorHandling = () => {
   return query;
 };
 
-// Book appointment mutation
+
+// Fixed hooks
 export const useBookAppointment = () => {
   const { backendUrl, token } = useAppContext();
   const queryClient = useQueryClient();
 
-  return useMutation<any, Error, { doctorId: string; slotDate: string; slotTime: string }>({
-    mutationFn: async ({ doctorId, slotDate, slotTime }) => {
+  return useMutation<any, Error, { docId: string; slotDate: string; slotTime: string }>({
+    mutationFn: async ({ docId, slotDate, slotTime }) => {
       const { data } = await axios.post(
         `${backendUrl}/user/book-appointment`,
-        { doctorId, slotDate, slotTime },
+        { docId, slotDate, slotTime },
         { headers: { token } }
       );
       if (!data.success) {
@@ -159,16 +172,15 @@ export const useBookAppointment = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidate appointments query to refetch
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['userAppointments'] }); // Consistent key
       toast.success('Appointment booked successfully');
     },
     onError: (error: Error) => {
-      console.error(error);
       toast.error(error.message || 'Failed to book appointment');
     },
   });
 };
+
 
 // Context Provider - now only for client state
 const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
