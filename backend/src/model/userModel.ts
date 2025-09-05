@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import { isLowercase } from "validator";
 
 export interface IUser extends mongoose.Document {
 name: string;
@@ -14,18 +13,18 @@ name: string;
   gender: 'Male' | 'Female' | 'Other' | null;
   dob: Date | null;
   phone: string | null;
-  profileComplete: boolean;
-  profileCompletedAt: Date | null;
-  isActive: boolean;
-  isEmailVerified: boolean;
+  profileComplete?: boolean;
+  profileCompletedAt?: Date | null;
+  isActive?: boolean;
+  isEmailVerified?: boolean;
   emailVerificationOTP?: string | null;         
   emailVerificationOTPExpires?: Date | null;    
   emailVerificationOTPAttempts?: number;        
-  passwordResetToken: string | null;
-  passwordResetExpires: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  lastLogin: Date | null;
+  passwordResetToken?: string | null;
+  passwordResetExpires?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  lastLogin?: Date | null;
   otpCode?: string | null;
 
   checkProfileCompletion(): boolean;

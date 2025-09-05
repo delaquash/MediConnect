@@ -1,10 +1,12 @@
-export function checkUserProfileCompletion(user: any): { isComplete: boolean; missingFields: string[] } {
+import { IUser } from "../model/userModel";
+
+export function checkUserProfileCompletion(user: IUser): { isComplete: boolean; missingFields: string[] } {
   const requiredFields = [
     { field: 'name', value: user.name },
     { field: 'email', value: user.email },
     { field: 'phone', value: user.phone },
     { field: 'address', value: user.address },
-    { field: 'dateOfBirth', value: user.dateOfBirth },
+    { field: 'dob', value: user.dob },
     { field: 'gender', value: user.gender },
     // Add other required fields based on your User schema
   ];
