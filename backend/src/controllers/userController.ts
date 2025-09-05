@@ -782,8 +782,8 @@ const completeProfile = async (req: AuthenticatedRequest, res: Response, next: N
       name: name.trim(),
       phone: phone.trim(),
       address: {
-        line1: address.line1.trime() || "",
-        line2: address.line2.trime() || ""
+        line1: address.line1.trim() || "",
+        line2: address.line2.trim() || ""
       },
       dob: new Date(dob),
       profileComplete: true,
