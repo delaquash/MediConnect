@@ -22,7 +22,7 @@ export interface IAppointment extends Document {
 const appointmentSchema = new Schema<IAppointment>({
   userId: { type: String, required: true },
   docId: { type: String, required: true },
-  email:{type: String, required: true},
+  email: { type: String, required: true },
   slotDate: { type: String, required: true },
   slotTime: { type: String, required: true },
   userData: { type: Object, required: true },

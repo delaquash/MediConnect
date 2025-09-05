@@ -118,8 +118,8 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
 
 const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // FIXED: Use req.docId instead of req.userId for doctor authentication
-    const doctorId = req.docId; // From doctor auth middleware
+
+    const doctorId = req.docId; 
     
     // Validate doctor ID format
     if (!doctorId || !mongoose.Types.ObjectId.isValid(doctorId)) {
@@ -511,7 +511,9 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
   }
 };
 
-const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {}
+const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  
+}
 
 export {
     changeAvailability,

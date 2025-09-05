@@ -258,10 +258,10 @@ const updateProfile = async (req: Request, res: Response, next: NextFunction): P
             userId, 
             updateData,
             { 
-                new: true, // Return updated document
-                runValidators: true // Run schema validators
+                new: true,
+                runValidators: true 
             }
-        ).select("-password"); // Exclude password from response
+        ).select("-password"); 
         
         // Check if update was successful
         if (!updatedUser) {
@@ -319,7 +319,7 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
             success: false,
             message: "Invalid user or doctor ID"
         });
-        return;                         // Reject invalid dates
+        return;                        
      }
 
      // Validate appointment date (must be today or future, within 3 months)
@@ -337,7 +337,7 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
           success: false,
           message: "Invalid time slot. Please select a valid time between 9:00 AM and 5:00 PM"
         });
-        return;                              // Reject invalid time slots
+        return;                             
       }
      // Retrieve user document from database and include in transaction session  
      const user  = await UserModel.findById(userId).session(session)
@@ -347,7 +347,7 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
             success: false,
             message: "User not found"
         });
-        return; // Stop further processing if user not found
+        return; 
      }
 
     //   Retrieve doctor document from database and include in transaction session  
@@ -358,16 +358,16 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
             success: false,
             message: "Doctor not found"
         });
-        return; // Stop further processing if doctor not found
+        return;
     }
 
      // Check if doctor is currently accepting appointments
       if (!doctor.available) {
-        res.status(400).json({               // 400 Bad Request for unavailable doctor
+        res.status(400).json({               
           success: false,
           message: "Doctor is currently unavailable for appointments"
         });
-        return;                              // Cannot book with unavailable doctor
+        return;                              
       }
       // Get doctor's booked slots (object with dates as keys, time arrays as values)
       const doctorSlotsBooked = doctor.slots_booked || {};
@@ -376,55 +376,55 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
       
       // Check if requested time slot is already booked
       if (bookedSlotsForDate.includes(slotTime)) {
-        res.status(409).json({               // 409 Conflict status for booking collision
+        res.status(409).json({              
           success: false,
           message: "This time slot is already booked. Please select another time."
         });
-        return;                              // Cannot double-book same slot
+        return;                              
       }
     
       // Check for existing appointment with same parameters (prevent duplicate bookings)
      // Check for existing appointment with same parameters (prevent duplicate bookings)
       const existingAppointment = await AppointmentModel.findOne({
-        userId,                              // Same user
-        docId,                               // Same doctor
-        slotDate,                            // Same date
-        slotTime,                            // Same time
-        cancelled: false                     // Only check non-cancelled appointments
-      }).session(session);                   // Include in transaction
+        userId,                             
+        docId,                              
+        slotDate,                           
+        slotTime,                           
+        cancelled: false                   
+      }).session(session);                  
       
-      // If duplicate appointment found, reject the request
+   
       if (existingAppointment) {
-        res.status(409).json({               // 409 Conflict for duplicate appointment
+        res.status(409).json({               
           success: false,
           message: "You already have an appointment with this doctor at this time"
         });
-        return;                              // Prevent duplicate bookings
+        return;                              
       }
       // Prepare appointment data object with all required information
 
       const appointmentData = {
-        userId,                              // User ID from authenticated request
-        docId,                               // Doctor ID from request body
-        slotDate,                            // Date of the appointment
-        slotTime,                            // Time of the appointment
-        userData: {                           // User data to be stored in appointment
-          name: user.name,                    // User's name
-          email: user.email,                   // User's email
-          phone: user.phone,                   // User's phone number
-          address: user.address                // User's address
+        userId,                              
+        docId,                               
+        slotDate,                            
+        slotTime,                            
+        userData: {                          
+          name: user.name,                    
+          email: user.email,                   
+          phone: user.phone,                   
+          address: user.address                
         },
-        docData: {                            // Doctor data to be stored in appointment
-          name: doctor.name,           // Doctor's name
-          specialty: doctor.specialty,              // Doctor's specialty
-          degree: doctor.degree,                  // Doctor's degree    
-          fees: doctor.fees                     // Doctor's consultation fees
+        docData: {                        
+          name: doctor.name,           
+          specialty: doctor.specialty,    
+          degree: doctor.degree,          
+          fees: doctor.fees               
         },
-        amount: doctor.fees,                  // Appointment fee based on doctor's fees
-        date: Date.now(),                     // Current timestamp for appointment creation
-        cancelled: false,                     // Initially not cancelled
-        payment: false,                       // Initially not paid
-        isCompleted: false                    // Initially not completed
+        amount: doctor.fees,                   
+        date: Date.now(),                     
+        cancelled: false,                     
+        payment: false,                       
+        isCompleted: false                    
       }
 
 
@@ -452,14 +452,14 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
       res.status(201).json({                 // 201 Created status for successful creation
         success: true,
         message: "Appointment booked successfully",
-        appointment: {                       // Return appointment summary
-          appointmentId: newAppointment._id, // MongoDB-generated appointment ID
-          doctorName: doctor.name,           // Doctor's name for confirmation
-          speciality: doctor.specialty,     // Doctor's specialty for confirmation
-          slotDate,                          // Booked date for confirmation
-          slotTime,                          // Booked time for confirmation
-          fees: doctor.fees,                 // Amount to be paid
-          status: "confirmed"                // Appointment status
+        appointment: {                       
+          appointmentId: newAppointment._id, 
+          doctorName: doctor.name,           
+          speciality: doctor.specialty,     
+          slotDate,                          
+          slotTime,                          
+          fees: doctor.fees,                 
+          status: "confirmed"                
         }
       });
     }) 
@@ -469,7 +469,7 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
     
     // Handle specific MongoDB validation errors
     if (error.name === 'ValidationError') {
-      res.status(400).json({                 // 400 Bad Request for validation issues
+      res.status(400).json({                 
         success: false,
         message: "Validation error: Please check your input data"
       });
@@ -478,17 +478,15 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
     
     // Handle MongoDB ObjectId casting errors
     if (error.name === 'CastError') {
-      res.status(400).json({                 // 400 Bad Request for casting issues
+      res.status(400).json({                 
         success: false,
         message: "Invalid ID format"
       });
       return;
     }
     
-    // Pass unhandled errors to Express error middleware
     next(error);
   } finally {
-    // Always end the MongoDB session to prevent memory leaks
     await session.endSession();
   }
 }
