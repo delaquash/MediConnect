@@ -130,6 +130,47 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
   }
 };
 
+const registerAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { name, email, password } = req.body;
+
+    if(!name || !email || !password) {
+      res.status(400).json({
+        success: false,
+        message: "Name, email, and password are required"
+      });
+      return;
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!validator.isEmail(trimmedEmail)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid email format"
+      });
+      return;
+    }
+
+    if (!validator.isStrongPassword(password, {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+    })) {
+      res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
+      });
+      return;
+    }
+    
+  } catch (error) {
+    
+  }
+}
+
 const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, password } = req.body;
