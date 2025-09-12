@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import UserModel from '../model/userModel';
 import { createOTp } from '../utils/token';
 import EmailService from '../services/emailService';
+import AdminModel from '../model/adminModel';
 
 const registerDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -165,7 +166,8 @@ const registerAdmin = async (req: Request, res: Response, next: NextFunction): P
       });
       return;
     }
-    
+
+    const existingAdmin = await AdminModel.findOne
   } catch (error) {
     
   }

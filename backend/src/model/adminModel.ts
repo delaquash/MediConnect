@@ -63,15 +63,6 @@ const adminSchema = new Schema<IAdmin>(
       type: Date,
       default: null,
     },
-
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
     lastLogin: {
       type: Date,
       default: null,
