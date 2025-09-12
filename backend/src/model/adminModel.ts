@@ -5,6 +5,9 @@ export interface IAdmin extends Document {
   name: string;
   email: string;
   password: string;
+  role: string;
+  permissions:string[];
+  isActive:Boolean;
 
   emailVerificationToken?: string | null;
   emailVerificationOTPExpires?: Date | null;
@@ -18,60 +21,91 @@ export interface IAdmin extends Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const adminSchema = new Schema<IAdmin>(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-      minlength: [2, "Name must be at least 2 characters long"],
-      maxlength: [50, "Name must be less than 50 characters"],
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-      validate: {
-        validator: function (email: string) {
-          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        },
-        message: "Please provide a valid email address",
-      },
-    },
-    password: {
-      type: String,
-      required: [true, "Password is required."],
-      minlength: [8, "Password must be at least 8 characters long"],
-    },
-
-    emailVerificationToken: {
-      type: String,
-      default: null,
-    },
-    emailVerificationOTPExpires: {
-      type: Date,
-      default: null,
-    },
-
-    passwordResetToken: {
-      type: String,
-      default: null,
-    },
-    passwordResetExpires: {
-      type: Date,
-      default: null,
-    },
-    lastLogin: {
-      type: Date,
-      default: null,
-    },
+const adminSchema = new mongoose.Schema<IAdmin>({
+  name: {
+    type: String,
+    required: true,
+    default: "System Admin",
   },
-  {
-    timestamps: true, // auto adds createdAt & updatedAt
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+     type: String,
+    required: true
+  },
+  role: {
+    type: String,
+    default: 'system_admin'
+  },
+  permissions: [{
+    type: String,
+    enum: ['add_doctor', 'manage_doctors', 'view_appointments', 'cancel_appointments', 'view_dashboard', 'manage_users'],
+    default: ['add_doctor', 'manage_doctors', 'view_appointments', 'cancel_appointments', 'view_dashboard', 'manage_users']
+  }],
+  lastLogin: Date,
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-);
+
+  // {
+  //   name: {
+  //     type: String,
+  //     required: true,
+  //     trim: true,
+  //     minlength: [2, "Name must be at least 2 characters long"],
+  //     maxlength: [50, "Name must be less than 50 characters"],
+  //   },
+  //   email: {
+  //     type: String,
+  //     required: true,
+  //     unique: true,
+  //     trim: true,
+  //     lowercase: true,
+  //     validate: {
+  //       validator: function (email: string) {
+  //         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  //       },
+  //       message: "Please provide a valid email address",
+  //     },
+  //   },
+  //   password: {
+  //     type: String,
+  //     required: [true, "Password is required."],
+  //     minlength: [8, "Password must be at least 8 characters long"],
+  //   },
+
+  //   emailVerificationToken: {
+  //     type: String,
+  //     default: null,
+  //   },
+  //   emailVerificationOTPExpires: {
+  //     type: Date,
+  //     default: null,
+  //   },
+
+  //   passwordResetToken: {
+  //     type: String,
+  //     default: null,
+  //   },
+  //   passwordResetExpires: {
+  //     type: Date,
+  //     default: null,
+  //   },
+  //   lastLogin: {
+  //     type: Date,
+  //     default: null,
+  //   },
+  // },
+
+})
 
 // Indexes for faster queries
 adminSchema.index({ createdAt: -1 });
