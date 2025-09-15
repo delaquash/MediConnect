@@ -2,7 +2,11 @@ import { NextFunction, Request, Response } from "express"
 import jwt from "jsonwebtoken"
 import AdminModel from "../model/adminModel"
 
-
+declare global {
+    namespace Request {
+        req: any
+    }
+}
 
 export const SystemAuth = async (req: any, res: Response, next: NextFunction) => {
     try {
