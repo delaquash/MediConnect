@@ -14,8 +14,6 @@ export interface IAdmin extends Document {
   passwordResetToken?: string | null;
   passwordResetExpires?: Date | null;
 
-  createdAt?: Date;
-  updatedAt?: Date;
   lastLogin?: Date | null;
 
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -30,7 +28,15 @@ const adminSchema = new mongoose.Schema<IAdmin>({
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    lowercase: true,
+    trim: true,
+    validate: {
+      validator: function (email: string) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      },
+      message: "Please provide a valid email address",
+    },
   },
   password: {
      type: String,
@@ -50,10 +56,6 @@ const adminSchema = new mongoose.Schema<IAdmin>({
     type: Boolean,
     default: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
 
   // {
   //   name: {
@@ -105,7 +107,12 @@ const adminSchema = new mongoose.Schema<IAdmin>({
   //   },
   // },
 
-})
+}, 
+{
+  timestamps: true
+}
+
+)
 
 // Indexes for faster queries
 adminSchema.index({ createdAt: -1 });

@@ -135,15 +135,22 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
   try {
     const { email, password } = req.body;
 
-    if (process.env.ADMIN_EMAIL !== email || process.env.ADMIN_PASSWORD !== password) {
+
+    const admin = await AdminModel.findOne({ email })
+    if (!email || !password || !admin?.isActive) {
+      res.status(401).json({ success: false, message: "Invalid email or password" });
+      return;
+    }
+    const ismatch = await admin.comparePassword(password)
+    if(!ismatch){
       res.status(401).json({ success: false, message: "Invalid email or password" });
       return;
     }
     const token = jwt.sign(
       {
-        email: process.env.ADMIN_EMAIL,
-        role: 'admin',
-        id: 'admin'
+        email: admin.email,
+        role: admin.role,
+        id: admin._id
       },
       process.env.JWT_SECRET!,
       { expiresIn: "30d" }
