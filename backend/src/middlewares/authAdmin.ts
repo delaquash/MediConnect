@@ -1,45 +1,61 @@
 import { Request, Response, NextFunction } from "express"; // Importing types from Express
 import jwt from "jsonwebtoken"; // Import JWT library for verifying token
+import AdminModel from "../model/adminModel";
 
- const authAdmin = async (req: Request, res: Response, next: NextFunction) => {
+ const authAdmin = async (req: any, res: Response, next: NextFunction) => {
     try {
-        const { atoken } = req.headers as { atoken?: string };
+        const authHeader = req.headers.authorization;
+        const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
-        if (!atoken) {
+        if (!token) {
             res.status(401).json({
                 success: false,
-                message: "Not Authorized. Login Again",
-            });
-            return;
+                message: "Access Denied! Admin not authorized"
+            })
+            return
         }
 
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const jwtSecret = process.env.JWT_SECRET;
+        const decoded = jwt.verify(token as any, process.env.JWT_SECRET!) as any;
 
-        if (!adminEmail || !jwtSecret) {
-            throw new Error("Admin credentials or JWT secret not configured");
+        if (decoded.role !== "system_admin") {
+            res.status(403).json({
+                success: false,
+                message: "Access Denied! System Admin priviledges required"
+            })
+            return
         }
-
-        // Decode the JWT token (it's now an object)
-        const decoded = jwt.verify(atoken, jwtSecret) as any;
-
-        // Check if the decoded token has the expected structure and email
-        if (!decoded.email || decoded.email !== adminEmail || decoded.role !== 'admin') {
-
+        const admin = await AdminModel.findById(decoded.id)
+        if (!admin || !admin.isActive) {
             res.status(401).json({
                 success: false,
-                message: "Not Authorized. Login Again",
-            });
+                message: 'System admin not found or deactivated.'
+            })
             return;
         }
-
-        // All checks passed
+        req.adminId = decoded.id;
+        req.admin = admin;
         next();
+
     } catch (error: any) {
-        console.error("Admin Auth Error:", error.message);
-        res.status(401).json({ 
-            success: false, 
-            message: "Not Authorized. Login Again" 
+        console.error('System admin authentication error:', error);
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token format'
+            });
+        }
+
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Token expired. Please login again.'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Server error during authentication'
         });
     }
 };
