@@ -614,6 +614,7 @@ const listAppointment = async (req: Request, res: Response, next: NextFunction):
 
     const userAppointment = await AppointmentModel.find({
       userId: new mongoose.Types.ObjectId(userId),
+      cancelled: false  // only active appointments
     });
 
     res.status(200).json({
@@ -625,7 +626,6 @@ const listAppointment = async (req: Request, res: Response, next: NextFunction):
     next(error);
   }
 };
-
 
 
 const cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
