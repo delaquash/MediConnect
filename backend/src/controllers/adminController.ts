@@ -347,7 +347,7 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
     let totalRevenue = 0;
     appointments.forEach((appointment) => {
       if (appointment.isCompleted || appointment.payment) {
-        totalRevenue += appointment.amount;
+        totalRevenue += appointment?.amount || 5000;
       }
     });
 
