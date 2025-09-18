@@ -370,7 +370,7 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
     appointments.forEach((appointment) => {
       // Count earnings only if appointment is completed OR payment is made
       if (appointment.isCompleted || appointment.payment) {
-        earnings += appointment.amount;
+        earnings += appointment?.amount || 5000;
       }
     });
     

@@ -516,10 +516,11 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
 
       // Prepare appointment data object with all required information
       const appointmentData = {
-        userId,
-        docId,
+        userId: new mongoose.Types.ObjectId(userId),
+        docId: new mongoose.Types.ObjectId(docId),
         slotDate,
         slotTime,
+        amount: doctor.fees, 
         userData: {
           name: user.name,
           email: user.email,
@@ -535,7 +536,6 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
           degree: doctor.degree,
           fees: doctor.fees
         },
-        amount: doctor.fees,
         date: Date.now(),
         cancelled: false,
         payment: false,
@@ -600,7 +600,6 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
   }
 };
 
-
 const listAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = req.body;
@@ -612,16 +611,21 @@ const listAppointment = async (req: Request, res: Response, next: NextFunction):
       });
       return;
     }
-    const userAppointment = await AppointmentModel.find({ userId });
+
+    const userAppointment = await AppointmentModel.find({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
     res.status(200).json({
       success: true,
       message: "Appointment details successfully retrieved",
       userAppointment
-    })
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
+
 
 
 const cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
