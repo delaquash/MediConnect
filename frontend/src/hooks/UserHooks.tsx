@@ -136,7 +136,7 @@ export const userBookAppointment = () => {
 };
 
 // get appointment
-export const userGetAppointment = (): UseQueryResult<any, Error> => {
+export const getUserAppointment = (): UseQueryResult<any, Error> => {
   const {backendUrl, token } = useAppContext()
 
   return useQuery<any, Error>({

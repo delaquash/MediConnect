@@ -60,8 +60,7 @@ export const useAppContext = () => {
 export const api = {
   // login user
   loginUser: async (backendUrl: string, email: string, password: string) => {
-    const { data } = await axios.post("https://mediconnect-jp6p.onrender.com/user/login", {
-      // const { data } = await axios.post(`${backendUrl}/user/login`, {
+    const { data } = await axios.post(`${backendUrl}/user/login`, {
       email,
       password
     })
@@ -108,10 +107,13 @@ export const api = {
   },
 
   getUserAppointment: async(backendUrl: string, token: string)=> {
-    const { data } = await axios.get(`${backendUrl}/user/appointments`, {
-      headers:{
-        token
-      }});
+    // const { data } = await axios.get(`${backendUrl}/user/appointments`, {
+      const { data } = await axios.get("https://mediconnect-jp6p.onrender.com/user/appointments", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      console.log(data)
       if(!data.success){
         throw new Error(data.message)
       }

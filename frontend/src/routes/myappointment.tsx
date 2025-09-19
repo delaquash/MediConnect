@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useAppContext, useBookAppointment } from '../context/AppContext'
-import type { Key } from 'react'
+import { getUserAppointment } from '../hooks/UserHooks'
+
 
 export const Route = createFileRoute('/myappointment')({
   component: RouteComponent,
@@ -10,15 +11,16 @@ export const Route = createFileRoute('/myappointment')({
 
 function RouteComponent() {
   const { backendUrl, token } = useAppContext()
-  const {data:appointmentDetails, isPending, error} = useBookAppointment()
-  console.log(appointmentDetails)
+  const { data, isPending, error } = getUserAppointment()
+
+  console.log(data)
 // const {} = 
   return (
       <div>
         <p className='pb-3 mt-40 text-lg font-medium text-[#4B5563]'>My Appointments</p>
         <hr className='border-[#D1D1D1] border-2'/>
         <div className=''>
-          {appointmentDetails?.map((details: any, index: Key | null | undefined)=>(
+          {data?.map((details: any, index: number)=>(
             <div
               key={index} 
               className='grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-4 border-b'
