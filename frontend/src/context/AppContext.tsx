@@ -109,14 +109,14 @@ export const api = {
   getUserAppointment: async(backendUrl: string, token: string)=> {
     // const { data } = await axios.get(`${backendUrl}/user/appointments`, {
       const { data } = await axios.get("https://mediconnect-jp6p.onrender.com/user/appointments", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      console.log(data)
+      headers:{
+        token
+      }});
+
       if(!data.success){
         throw new Error(data.message)
-      }
+      }     
+       console.log(data.userAppointment)
       return data
   }
 };
