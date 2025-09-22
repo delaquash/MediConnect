@@ -7,12 +7,14 @@ import {
   doctorList,
   doctorsDashboard,
   getDoctorProfile,
-  updateDoctorProfile
+  updateDoctorProfile,
+  completeDoctorProfile
 } from "../controllers/doctorController";
 import authDoctor from "../middlewares/docAuth";
 import { checkDoctorProfileComplete } from "../middlewares/checkDoctorProfileComplete";
 import { verifyDoctorOTP } from "../otpVerification/VerifyDocOtp";
 import { requestDoctorPasswordReset, resetDoctorPassword, resendVerificationOTP} from "../controllers/PasswordResetController"
+import upload from "../middlewares/multer";
 
 const doctorRouter = express.Router();
 
@@ -21,10 +23,11 @@ doctorRouter.post("/verify-otp", verifyDoctorOTP)
 doctorRouter.post("/login", loginDoctor);
 doctorRouter.get("/appointments", authDoctor, checkDoctorProfileComplete, getDoctorAppointments);
 doctorRouter.post("/complete-appointment", authDoctor, appointmentComplete);
-doctorRouter.post("/cancel-appointment", authDoctor, checkDoctorProfileComplete, checkDoctorProfileComplete, doctorCancelAppointment);
+doctorRouter.post("/cancel-appointment", authDoctor, checkDoctorProfileComplete, doctorCancelAppointment);
 doctorRouter.get("/dashboard", authDoctor, doctorsDashboard);
 doctorRouter.get("/profile", authDoctor, getDoctorProfile);
-doctorRouter.post("/update-profile", authDoctor, updateDoctorProfile);
+doctorRouter.post("/complete-doc-profile", authDoctor, upload.single("image"), completeDoctorProfile);
+doctorRouter.post("/update-profile", authDoctor,upload.single("image"), updateDoctorProfile);
 
 
 export default doctorRouter;
