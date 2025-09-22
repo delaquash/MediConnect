@@ -16,7 +16,7 @@ import { requestDoctorPasswordReset, resetDoctorPassword, resendVerificationOTP}
 
 const doctorRouter = express.Router();
 
-doctorRouter.get("/list", authDoctor, checkDoctorProfileComplete, doctorList);
+doctorRouter.get("/list", authDoctor, doctorList);
 doctorRouter.post("/verify-otp", verifyDoctorOTP)
 doctorRouter.post("/login", loginDoctor);
 doctorRouter.get("/appointments", authDoctor, checkDoctorProfileComplete, getDoctorAppointments);
