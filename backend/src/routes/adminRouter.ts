@@ -6,9 +6,9 @@ import {
   appointmentsAdmin,
   appointmentCancel,
   adminDashboard,
+  changeAvailability
 } from "../controllers/adminController";
 import authAdmin from "../middlewares/authAdmin";
-import { changeAvailability } from "../controllers/doctorController";
 
 const adminRouter = express.Router();
 

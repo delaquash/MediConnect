@@ -13,8 +13,12 @@ export interface IDoctor extends Document {
   about?: string;
   available?: boolean;
   fees?: number;
-  address?: {
-    [key: string]: any;
+   address: {
+    line1: string;
+    line2: string;
+    city: string,
+    state: string,
+    zip: string,
   };
   date: Date;
   slots_booked?: {
@@ -44,7 +48,6 @@ const doctorSchema = new Schema<IDoctor>(
     name: { 
       type: String, 
       required: true,
-      trim: true,
       minlength: [2, "Name must be at least 2 characters long"],
       maxlength: [50, "Name must be less than 50 characters"]  
     },
@@ -74,7 +77,33 @@ const doctorSchema = new Schema<IDoctor>(
     about: { type: String},
     available: { type: Boolean, default: true },
     fees: { type: Number },
-    address: { type: Object, },
+    address: { 
+        line1: {
+        type: String,
+        default: "",
+        maxlength: [100, 'Address line 1 must be less than 100 characters']
+      },
+      line2: {
+        type: String,
+        default: "",
+        maxlength: [100, 'Address line 2 must be less than 100 characters']
+      },
+      city: {
+        type: String,
+        default: "",
+        maxlength: [50, 'City must be less than 50 characters']
+      },
+      state: {
+        type: String,
+        default: "",
+        maxlength: [50, 'State must be less than 50 characters']
+      },
+      zip: {
+        type: String,
+        default: "",
+        maxlength: [20, 'Zip code must be less than 20 characters']
+      },
+  },
     date: {type: Date, default: Date.now },
 
     slots_booked: { type: Object, default: {} },

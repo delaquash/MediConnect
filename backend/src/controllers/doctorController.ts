@@ -7,62 +7,7 @@ import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
 import { validateProfileData } from '../helper/validateProfileData';
 import { v2 as cloudinary } from 'cloudinary';
 
-const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
 
-        if (!req.body) {
-            res.status(400).json({
-                success: false,
-                message: "Request body is required"
-            });
-            return;
-        }
-
-        const { docId } = req.body;
-        
-        
-        if (!docId) {
-            res.status(400).json({
-                success: false,
-                message: "Doctor ID (docId) is required"
-            });
-            return;
-        }
-  
-        const doctor = await DoctorModel.findById(docId);
-        
-   
-        if (!doctor) {
-            res.status(404).json({
-                success: false,
-                message: "Doctor not found"
-            });
-            return;
-        }
-        
- 
-        const newAvailability = !doctor.available;
-        
-        // Update doctor's availability
-        await DoctorModel.findByIdAndUpdate(
-            docId,
-            { available: newAvailability },
-            { new: true }
-        );
-        
-
-        res.status(200).json({
-            success: true,
-            message: `Doctor availability ${newAvailability ? 'enabled' : 'disabled'} successfully`,
-            data: { 
-                docId: docId,
-                available: newAvailability 
-            }
-        });
-    } catch (error) {
-        next(error);
-    }
-}
 const doctorList = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const doctors = await DoctorModel.find({}).select(["-password", "-email"]).sort({ date: -1 });
@@ -75,6 +20,7 @@ const doctorList = async (req: Request, res: Response, next: NextFunction): Prom
         next(error);
     }
 }
+
 const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
 
@@ -534,6 +480,13 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
       })
       return
     }
+
+    const trimmedAddress = Object.fromEntries(
+      Object.entries(address || {}).map(([key, value]) => [
+        key,
+        typeof value === "string" ? value.trim() : value
+      ])
+    );
     // image, specialty, degree, experience, about, fees, address } = req.body;
   const updateDocData: any = {}
 
@@ -544,7 +497,7 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
   if(experience !== undefined) updateDocData.experience = experience.trim();
   if(about !== undefined) updateDocData.about = about.trim();
   if(fees !== undefined) updateDocData.fees = fees;
-  if(address !== undefined) updateDocData.address = address.trim();
+  if(address !== undefined) updateDocData.address = trimmedAddress;
 
   // cloudinary to handle image upload
   if (imageFile) {
@@ -645,6 +598,12 @@ const completeDoctorProfile = async (req: Request, res: Response, next: NextFunc
       return
     }
 
+    const trimmedAddress = Object.fromEntries(
+      Object.entries(address || {}).map(([key, value]) => [
+        key,
+        typeof value === "string" ? value.trim() : value
+      ])
+    );
     // prepare update data 
     const docProfileDataUpDate: any= {
       phone: phone.trim(),
@@ -652,7 +611,7 @@ const completeDoctorProfile = async (req: Request, res: Response, next: NextFunc
       degree: degree.trim(),
       experience: experience.trim(),
       about:about.trim(),
-      address: address.trim(),
+      address: address.trimmedAddress,
       
       profileComplete: true,
       profileCompletedAt: new Date()
@@ -698,12 +657,12 @@ const completeDoctorProfile = async (req: Request, res: Response, next: NextFunc
           doctor: completeDocProfile
         })
   } catch (error) {
-    
+    next(error);
+    console.error("Unable to complete profile", error);
   }
 }
 
 export {
-    changeAvailability,
     doctorList,
     loginDoctor,
     getDoctorAppointments,

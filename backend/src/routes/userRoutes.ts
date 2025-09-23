@@ -28,4 +28,5 @@ userRouter.post("/cancel-appointment", authUser, cancelAppointment);
 userRouter.post('/complete-profile', authUser, upload.single('image'), completeProfile);
 userRouter.put('/update-profile', authUser, upload.single('image'), updateProfile);
 userRouter.get('/profile-status', authUser, getProfileStatus);
+
 export default userRouter;

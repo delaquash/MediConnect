@@ -429,6 +429,62 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
   }
 }
 
+const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+
+        if (!req.body) {
+            res.status(400).json({
+                success: false,
+                message: "Request body is required"
+            });
+            return;
+        }
+
+        const { docId } = req.body;
+        
+        
+        if (!docId) {
+            res.status(400).json({
+                success: false,
+                message: "Doctor ID (docId) is required"
+            });
+            return;
+        }
+  
+        const doctor = await DoctorModel.findById(docId);
+        
+   
+        if (!doctor) {
+            res.status(404).json({
+                success: false,
+                message: "Doctor not found"
+            });
+            return;
+        }
+        
+ 
+        const newAvailability = !doctor.available;
+        
+        // Update doctor's availability
+        await DoctorModel.findByIdAndUpdate(
+            docId,
+            { available: newAvailability },
+            { new: true }
+        );
+        
+
+        res.status(200).json({
+            success: true,
+            message: `Doctor availability ${newAvailability ? 'enabled' : 'disabled'} successfully`,
+            data: { 
+                docId: docId,
+                available: newAvailability 
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+}
 export {
   registerDoctor,
   loginAdmin,
@@ -436,4 +492,5 @@ export {
   appointmentsAdmin,
   appointmentCancel,
   adminDashboard,
+  changeAvailability
 }
