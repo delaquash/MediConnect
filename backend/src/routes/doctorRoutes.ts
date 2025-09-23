@@ -8,7 +8,7 @@ import {
   doctorsDashboard,
   getDoctorProfile,
   updateDoctorProfile,
-  completeDoctorProfile
+  completeDoctorProfile,
 } from "../controllers/doctorController";
 import authDoctor from "../middlewares/docAuth";
 import { checkDoctorProfileComplete } from "../middlewares/checkDoctorProfileComplete";
