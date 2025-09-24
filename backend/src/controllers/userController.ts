@@ -602,28 +602,23 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
 
 const listAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { userId } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid user ID"
-      });
-      return;
+    const userId = req.userId; // This should be set by auth middleware
+    
+    if (!userId) {
+       res.status(400).json({ success: false, message: 'User ID not found' });
+       return
     }
 
-    const userAppointment = await AppointmentModel.find({
-      userId: new mongoose.Types.ObjectId(userId),
-      cancelled: false  // only active appointments
-    });
-
-    res.status(200).json({
+    const appointments = await AppointmentModel.find({ userId });
+    
+    res.json({
       success: true,
-      message: "Appointment details successfully retrieved",
-      userAppointment
+      message: "Appointments retrieved successfully",
+      userAppointment: appointments
     });
   } catch (error) {
-    next(error);
+    console.error('List appointments error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
