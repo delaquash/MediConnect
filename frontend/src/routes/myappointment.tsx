@@ -8,16 +8,9 @@ export const Route = createFileRoute('/myappointment')({
 
 function RouteComponent() {
 const { backendUrl, token } = useAppContext()
-console.log('Component token check:', { backendUrl, token, tokenExists: !!token });
-
 const { data: response, isPending, error } = getUserAppointment()
-console.log('Render state:', { 
-  hasData: !!response, 
-  isPending, 
-  hasError: !!error,
-  errorMessage: error?.message 
-});
 
+console.log(response)
 if (isPending) {
   console.log('Query is still loading...');
   return <div>Loading appointments...</div>;
@@ -28,8 +21,14 @@ if (error) {
   return <div>Error loading appointments: {error.message}</div>;
 }
 
-console.log('Final response:', response);
-console.log('Query state:', { response, isPending, error });
+
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // Function to format the date eg. ( 20_01_2000 => 20 Jan 2000 )
+    const slotDateFormat = (slotDate: string) => {
+        const dateArray = slotDate.split('_')
+        return dateArray[0] + " " + months[Number(dateArray[1])] + " " + dateArray[2]
+    }
   return (
       <div>
         <p className='pb-3 mt-40 text-lg font-medium text-[#4B5563]'>My Appointments</p>
@@ -38,13 +37,18 @@ console.log('Query state:', { response, isPending, error });
           {response?.map((details: any, index: number)=>(
             <div
               key={index} 
-              className='grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-4 border-b'
+              className='grid grid-cols-[1fr_2fr] sm:flex sm:gap-6 py-4 border-b border-[#D1D1D1]'
             >
               <div>
-                <img className='w-36 bg-[#EAEFF]' src={details.image} alt=''/>
+                <img className='w-36 bg-[#EAEFF]' src={details?.userData?.image} alt=''/>
               </div>
-              <div className='flex-1 text-sm text-[#5E5E5E]'>
-                <p className='text-[#262626] font-medium text-base'>{details.name}</p>
+              <div className='flex-1 text-sm text-[#5E5E5E] m-2'>
+                <p className='text-[#262626] font-medium text-base'>{details?.userData?.name}</p>
+                <p className='pt-4'>{details?.userData?.specialty}</p>
+                <p className='text-[#464646] font-medium mt-1'>Address:</p>
+                <p className=''>{details?.userData?.address.line1}</p>
+                <p className=''>{details?.userData?.address.line2}</p>
+                <p className=' mt-1'><span className='text-sm text-[#3C3C3C] font-medium'>Date & Time:</span> {details?.slotDate} |  {details?.slotTime}</p>
               </div>
             </div>
           ))}

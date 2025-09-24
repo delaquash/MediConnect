@@ -110,11 +110,9 @@ getUserAppointment: async(backendUrl: string, token: string) => {
   try {
     console.log('API call starting with token:', token);
     
-    const { data } = await axios.get("https://mediconnect-jp6p.onrender.com/user/appointments", {
+    const { data } = await axios.get(`${backendUrl}/user/appointments`, {
       headers: { token }
     });
-
-    console.log('API response received:', data);
 
     if (!data.success) {
       throw new Error(data.message);

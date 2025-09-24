@@ -139,15 +139,9 @@ export const userBookAppointment = () => {
 export const getUserAppointment = (): UseQueryResult<any, Error> => {
   const { backendUrl, token } = useAppContext()
 
-  console.log('getUserAppointment called with:');
-  console.log('- backendUrl:', backendUrl);
-  console.log('- token exists:', !!token);
-  console.log('- token value:', token);
-
   return useQuery<any, Error>({
     queryKey: ["userAppointment", token],
     queryFn: () => {
-      console.log('Query function executing...');
       return api.getUserAppointment(backendUrl, token);
     },
     enabled: !!token,
