@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom'
 import Footer from '../../components/Footer';
 
-
 export const Route = createFileRoute('/doctors/')({
   component: Doctors,
 })

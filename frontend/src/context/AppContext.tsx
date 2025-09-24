@@ -106,20 +106,27 @@ export const api = {
     return data?.userProfile;
   },
 
-  getUserAppointment: async(backendUrl: string, token: string)=> {
-    // const { data } = await axios.get(`${backendUrl}/user/appointments`, {
-      const { data } = await axios.get("https://mediconnect-jp6p.onrender.com/user/appointments", {
-      headers:{
-        token
-      }});
+getUserAppointment: async(backendUrl: string, token: string) => {
+  try {
+    console.log('API call starting with token:', token);
+    
+    const { data } = await axios.get("https://mediconnect-jp6p.onrender.com/user/appointments", {
+      headers: { token }
+    });
 
-      if(!data.success){
-        throw new Error(data.message)
-      }     
-       console.log(data.userAppointment)
-      return data
+    console.log('API response received:', data);
+
+    if (!data.success) {
+      throw new Error(data.message);
+    }
+    
+    return data.userAppointment;
+  } catch (error) {
+    console.error('API call failed:', error);
+    throw error;
   }
-};
+},
+}
 
 export const useDoctors = (): UseQueryResult<Doctor[], Error> => {
   const { backendUrl } = useAppContext();

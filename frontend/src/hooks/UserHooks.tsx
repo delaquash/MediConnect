@@ -137,16 +137,24 @@ export const userBookAppointment = () => {
 
 // get appointment
 export const getUserAppointment = (): UseQueryResult<any, Error> => {
-  const {backendUrl, token } = useAppContext()
+  const { backendUrl, token } = useAppContext()
+
+  console.log('getUserAppointment called with:');
+  console.log('- backendUrl:', backendUrl);
+  console.log('- token exists:', !!token);
+  console.log('- token value:', token);
 
   return useQuery<any, Error>({
     queryKey: ["userAppointment", token],
-    queryFn:()=> api.getUserAppointment(backendUrl, token),
+    queryFn: () => {
+      console.log('Query function executing...');
+      return api.getUserAppointment(backendUrl, token);
+    },
     enabled: !!token,
-     staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   })
-}
+};
 // user cancel appointment hook
 export const userCancelAppointment = () => {
   const { backendUrl, token } = useAppContext();

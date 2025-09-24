@@ -2,20 +2,34 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useAppContext, useBookAppointment } from '../context/AppContext'
 import { getUserAppointment } from '../hooks/UserHooks'
 
-
 export const Route = createFileRoute('/myappointment')({
   component: RouteComponent,
 })
 
-
-
 function RouteComponent() {
-  const { backendUrl, token } = useAppContext()
+const { backendUrl, token } = useAppContext()
+console.log('Component token check:', { backendUrl, token, tokenExists: !!token });
+
 const { data: response, isPending, error } = getUserAppointment()
+console.log('Render state:', { 
+  hasData: !!response, 
+  isPending, 
+  hasError: !!error,
+  errorMessage: error?.message 
+});
 
-// const appointments = response?.userAppointment;
+if (isPending) {
+  console.log('Query is still loading...');
+  return <div>Loading appointments...</div>;
+}
 
-  // console.log(response)
+if (error) {
+  console.log('Query failed with error:', error);
+  return <div>Error loading appointments: {error.message}</div>;
+}
+
+console.log('Final response:', response);
+console.log('Query state:', { response, isPending, error });
   return (
       <div>
         <p className='pb-3 mt-40 text-lg font-medium text-[#4B5563]'>My Appointments</p>
