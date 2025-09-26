@@ -9,8 +9,10 @@ import {
   changeAvailability
 } from "../controllers/adminController";
 import authAdmin from "../middlewares/authAdmin";
+import { seedInitialAdmin } from "../scripts/seedSystemAdmin";
 
 const adminRouter = express.Router();
+adminRouter.post("/setup", seedInitialAdmin);
 
 adminRouter.post("/add-doctor", registerDoctor);
 adminRouter.post("/login", loginAdmin);

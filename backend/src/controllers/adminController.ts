@@ -9,6 +9,7 @@ import { createOTp } from '../utils/token';
 import EmailService from '../services/emailService';
 import AdminModel from '../model/adminModel';
 
+
 const registerDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { name, email, password } = req.body;
@@ -131,41 +132,162 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
   }
 };
 
+// const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+//   try {
+//     const { email, password } = req.body;
+
+//     // Validation
+//     if (!email || !password) {
+//       res.status(400).json({ 
+//         success: false, 
+//         message: "Email and password are required" 
+//       });
+//       return;
+//     }
+
+//     // Find admin by email (case-insensitive)
+//     const admin = await AdminModel.findOne({ 
+//       email: email.toLowerCase().trim() 
+//     });
+
+//     if (!admin) {
+//       console.log(`Admin not found: ${email}`);
+//       res.status(401).json({ 
+//         success: false, 
+//         message: "Invalid credentials" 
+//       });
+//       return;
+//     }
+
+//     // Check if admin is active
+//     if (!admin.isActive) {
+//       res.status(403).json({ 
+//         success: false, 
+//         message: "Admin account is deactivated" 
+//       });
+//       return;
+//     }
+
+//     // Compare password
+//     const isMatch = await admin.comparePassword(password);
+//     if (!isMatch) {
+//       console.log(`Password mismatch for admin: ${email}`);
+//       res.status(401).json({ 
+//         success: false, 
+//         message: "Invalid credentials" 
+//       });
+//       return;
+//     }
+
+//     // Update last login
+//     admin.lastLogin = new Date();
+//     await admin.save();
+
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       {
+//         id: admin._id,
+//         email: admin.email,
+//         role: admin.role,
+//         permissions: admin.permissions
+//       },
+//       process.env.JWT_SECRET!,
+//       { expiresIn: "30d" }
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Login successful",
+//       token,
+//       admin: {
+//         id: admin._id,
+//         name: admin.name,
+//         email: admin.email,
+//         role: admin.role,
+//         permissions: admin.permissions
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Login error:', error);
+//     next(error);
+//   }
+// };
+
 const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, password } = req.body;
 
+    console.log('🔐 Login attempt received');
+    console.log('Email:', email);
+    console.log('Password provided:', password ? 'Yes' : 'No');
+    console.log('Password length:', password?.length);
 
-    const admin = await AdminModel.findOne({ email })
-    if (!email || !password || !admin?.isActive) {
-      res.status(401).json({ success: false, message: "Invalid email or password" });
+    if (!email || !password) {
+      console.log('❌ Missing email or password');
+      res.status(400).json({ 
+        success: false, 
+        message: "Email and password are required" 
+      });
       return;
     }
-    const ismatch = await admin.comparePassword(password)
-    if(!ismatch){
-      res.status(401).json({ success: false, message: "Invalid email or password" });
+
+    // Find admin with case-insensitive email
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('Normalized email:', normalizedEmail);
+    
+    const admin = await AdminModel.findOne({ email: normalizedEmail });
+    console.log('📋 Admin found:', !!admin);
+    
+    if (!admin) {
+      console.log('❌ No admin found with email:', normalizedEmail);
+      res.status(401).json({ 
+        success: false, 
+        message: "Invalid credentials" 
+      });
       return;
     }
+
+    console.log('🔑 Starting password comparison...');
+    console.log('Stored hash:', admin.password.substring(0, 20) + '...');
+    
+    const isMatch = await admin.comparePassword(password);
+    console.log('✅ Password comparison result:', isMatch);
+
+    if (!isMatch) {
+      console.log('❌ Password does not match');
+      console.log('Input password:', password);
+      res.status(401).json({ 
+        success: false, 
+        message: "Invalid credentials" 
+      });
+      return;
+    }
+
+    console.log('✅ Password matches! Generating token...');
+    
+    // Update last login
+    admin.lastLogin = new Date();
+    await admin.save();
+
     const token = jwt.sign(
-      {
-        email: admin.email,
-        role: admin.role,
-        id: admin._id
-      },
+      { id: admin._id, email: admin.email, role: admin.role },
       process.env.JWT_SECRET!,
       { expiresIn: "30d" }
     );
 
+    console.log('🎉 Login successful for:', admin.email);
     res.status(200).json({
       success: true,
       message: "Login successful",
       token,
     });
+
   } catch (error) {
+    console.error('💥 Login error:', error);
     next(error);
   }
-}
-
+};
 const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
   try {
@@ -492,5 +614,6 @@ export {
   appointmentsAdmin,
   appointmentCancel,
   adminDashboard,
-  changeAvailability
+  changeAvailability,
+  // seedInitialAdmin
 }
