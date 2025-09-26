@@ -9,7 +9,22 @@ import { createOTp } from '../utils/token';
 import EmailService from '../services/emailService';
 import AdminModel from '../model/adminModel';
 
+const getAllUser= async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const users = await UserModel.find({}).select("-password").sort({ date: -1 })
 
+    res.status(200).json({
+      success: true,
+      message: users.length === 0 ? "No users found" : "Users retrieved successfully",
+      data: users,
+      count: users.length,
+    });
+  } catch (error) {
+    console.error("Database error:", error); // Add this
+    next(error);
+    
+  }
+}
 
 const registerDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -515,12 +530,12 @@ const changeAvailability = async (req: Request, res: Response, next: NextFunctio
 }
 
 const deleteDoctorByAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- const session = await mongoose.startSession();
+     const session = await mongoose.startSession();
   try {
-    
+
     await session.startTransaction();
 
-    const { doctorId } = req.params;
+    const { doctorId } = req.body;
 
     if (!doctorId) {
       res.status(400).json({
@@ -633,7 +648,7 @@ const deleteDoctorByAdmin = async (req: Request, res: Response, next: NextFuncti
 };
 
 
-const deleteUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const deleteUserByAdmin = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
   const session = await mongoose.startSession()
   try {
     await session.startTransaction()
@@ -754,6 +769,8 @@ export {
   appointmentCancel,
   adminDashboard,
   changeAvailability,
-  deleteDoctorByAdmin
+  deleteDoctorByAdmin,
+  deleteUserByAdmin,
+  getAllUser
   // seedInitialAdmin
 }
