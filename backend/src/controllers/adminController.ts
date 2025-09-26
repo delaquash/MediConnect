@@ -218,13 +218,13 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
   try {
     const { email, password } = req.body;
 
-    console.log('🔐 Login attempt received');
+    console.log('Login attempt received');
     console.log('Email:', email);
     console.log('Password provided:', password ? 'Yes' : 'No');
     console.log('Password length:', password?.length);
 
     if (!email || !password) {
-      console.log('❌ Missing email or password');
+      console.log('Missing email or password');
       res.status(400).json({ 
         success: false, 
         message: "Email and password are required" 
@@ -237,10 +237,10 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
     console.log('Normalized email:', normalizedEmail);
     
     const admin = await AdminModel.findOne({ email: normalizedEmail });
-    console.log('📋 Admin found:', !!admin);
+    console.log('Admin found:', !!admin);
     
     if (!admin) {
-      console.log('❌ No admin found with email:', normalizedEmail);
+      console.log('No admin found with email:', normalizedEmail);
       res.status(401).json({ 
         success: false, 
         message: "Invalid credentials" 
@@ -248,14 +248,14 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
       return;
     }
 
-    console.log('🔑 Starting password comparison...');
+    console.log('Starting password comparison...');
     console.log('Stored hash:', admin.password.substring(0, 20) + '...');
     
     const isMatch = await admin.comparePassword(password);
-    console.log('✅ Password comparison result:', isMatch);
+    console.log('Password comparison result:', isMatch);
 
     if (!isMatch) {
-      console.log('❌ Password does not match');
+      console.log('Password does not match');
       console.log('Input password:', password);
       res.status(401).json({ 
         success: false, 
@@ -264,19 +264,23 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
       return;
     }
 
-    console.log('✅ Password matches! Generating token...');
+    console.log('Password matches! Generating token...');
     
     // Update last login
     admin.lastLogin = new Date();
     await admin.save();
 
     const token = jwt.sign(
-      { id: admin._id, email: admin.email, role: admin.role },
+      { 
+        id: admin._id, 
+        email: admin.email, 
+        role: admin.role 
+      },
       process.env.JWT_SECRET!,
       { expiresIn: "30d" }
     );
 
-    console.log('🎉 Login successful for:', admin.email);
+    console.log('Login successful for:', admin.email);
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -284,7 +288,7 @@ const loginAdmin = async (req: Request, res: Response, next: NextFunction): Prom
     });
 
   } catch (error) {
-    console.error('💥 Login error:', error);
+    console.error('Login error:', error);
     next(error);
   }
 };

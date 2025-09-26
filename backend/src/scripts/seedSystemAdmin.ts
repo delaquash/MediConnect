@@ -55,7 +55,7 @@ export const seedInitialAdmin = async (req: Request, res: Response): Promise<voi
       }
     });
 
-    console.log('✅ Admin seeded via API:', admin.email);
+    console.log('Admin seeded via API:', admin.email);
     
   } catch (error: any) {
     console.error('Seeding failed:', error);
@@ -71,13 +71,30 @@ export const seedInitialAdmin = async (req: Request, res: Response): Promise<voi
 
 const seedAdmin = async () => {
   try {
+
+    console.log('Starting admin seed...');
+    console.log('Environment variables:');
+    console.log('SEED_EMAIL:', process.env.SEED_EMAIL);
+    console.log('SEED_PASSWORD:', process.env.SEED_PASSWORD);
+    console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
     // Connect to database
     if (!process.env.MONGO_URI) {
       throw new Error('MONGO_URI environment variable is required');
     }
+
     
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to database');
+    console.log('Connected to database'); 
+    
+    if (!process.env.SEED_EMAIL || !process.env.SEED_PASSWORD) {
+      throw new Error('SEED_EMAIL and SEED_PASSWORD environment variables are required');
+    }
+
+    console.log('Seeding admin with:');
+    console.log('Email:', process.env.SEED_EMAIL);
+    console.log('Password:', process.env.SEED_PASSWORD);
+
+    
 
     // Admin details
     const adminData = {
