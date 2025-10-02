@@ -230,8 +230,8 @@ const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction
   try {
     const adminAppointment = await AppointmentModel
       .find({})
-      .populate("userId", "name, phone, email, dob")
-      .populate("docId", "name, phone, specialty")
+      // .populate("userId", "name, phone, email, dob")
+      // .populate("docId", "name, phone, specialty")
       .sort({ date: -1 })
     res.status(200).json({
       success: true,
@@ -382,8 +382,8 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
       DoctorModel.find({}),
       UserModel.find({}),
       AppointmentModel.find({})
-        .populate('userId', 'name email phone')
-        .populate('docId', 'name speciality')
+        // .populate('userId', 'name email phone')
+        // .populate('docId', 'name speciality')
         .sort({ date: -1 })
     ]);
 
@@ -653,7 +653,7 @@ const deleteUserByAdmin = async(req: Request, res: Response, next: NextFunction)
   try {
     await session.startTransaction()
 
-    const { userId } = req.params;
+    const { userId } = req.body;
     if(!userId) {
       res.status(400).json({
         success: false,
