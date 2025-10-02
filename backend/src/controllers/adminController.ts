@@ -1,13 +1,30 @@
+import mongoose from 'mongoose';
 import { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
 import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import AppointmentModel from '../model/appointmentModel';
-import mongoose from 'mongoose';
 import UserModel from '../model/userModel';
 import { createOTp } from '../utils/token';
 import EmailService from '../services/emailService';
 import AdminModel from '../model/adminModel';
+
+const getAllUser= async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const users = await UserModel.find({}).select("-password").sort({ date: -1 })
+
+    res.status(200).json({
+      success: true,
+      message: users.length === 0 ? "No users found" : "Users retrieved successfully",
+      data: users,
+      count: users.length,
+    });
+  } catch (error) {
+    console.error("Database error:", error); // Add this
+    next(error);
+    
+  }
+}
 
 const registerDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -134,37 +151,63 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
 const loginAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, password } = req.body;
-
-
-    const admin = await AdminModel.findOne({ email })
-    if (!email || !password || !admin?.isActive) {
-      res.status(401).json({ success: false, message: "Invalid email or password" });
+    if (!email || !password) {
+      res.status(400).json({ 
+        success: false, 
+        message: "Email and password are required" 
+      });
       return;
     }
-    const ismatch = await admin.comparePassword(password)
-    if(!ismatch){
-      res.status(401).json({ success: false, message: "Invalid email or password" });
+
+    // Find admin with case-insensitive email
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    const admin = await AdminModel.findOne({ email: normalizedEmail });
+    
+    if (!admin) {
+      console.log('No admin found with email:', normalizedEmail);
+      res.status(401).json({ 
+        success: false, 
+        message: "Invalid credentials" 
+      });
       return;
     }
+
+  
+    const isMatch = await admin.comparePassword(password);
+
+    if (!isMatch) {
+
+      res.status(401).json({ 
+        success: false, 
+        message: "Invalid credentials" 
+      });
+      return;
+    }
+    // Update last login
+    admin.lastLogin = new Date();
+    await admin.save();
+
     const token = jwt.sign(
-      {
-        email: admin.email,
-        role: admin.role,
-        id: admin._id
+      { 
+        id: admin._id, 
+        email: admin.email, 
+        role: admin.role 
       },
       process.env.JWT_SECRET!,
       { expiresIn: "30d" }
     );
-
     res.status(200).json({
       success: true,
       message: "Login successful",
       token,
     });
+
   } catch (error) {
+    console.error('Login error:', error);
     next(error);
   }
-}
+};
 
 const allDoctors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
@@ -187,8 +230,8 @@ const appointmentsAdmin = async (req: Request, res: Response, next: NextFunction
   try {
     const adminAppointment = await AppointmentModel
       .find({})
-      .populate("userId", "name, phone, email, dob")
-      .populate("docId", "name, phone, specialty")
+      // .populate("userId", "name, phone, email, dob")
+      // .populate("docId", "name, phone, specialty")
       .sort({ date: -1 })
     res.status(200).json({
       success: true,
@@ -339,8 +382,8 @@ const adminDashboard = async (req: Request, res: Response, next: NextFunction) =
       DoctorModel.find({}),
       UserModel.find({}),
       AppointmentModel.find({})
-        .populate('userId', 'name email phone')
-        .populate('docId', 'name speciality')
+        // .populate('userId', 'name email phone')
+        // .populate('docId', 'name speciality')
         .sort({ date: -1 })
     ]);
 
@@ -485,6 +528,239 @@ const changeAvailability = async (req: Request, res: Response, next: NextFunctio
         next(error);
     }
 }
+
+const deleteDoctorByAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+     const session = await mongoose.startSession();
+  try {
+
+    await session.startTransaction();
+
+    const { doctorId } = req.body;
+
+    if (!doctorId) {
+      res.status(400).json({
+        success: false,
+        message: "Doctor ID is required"
+      });
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid Doctor ID format"
+      });
+      return;
+    }
+    // check if doctor exist in db
+    const doctor = await DoctorModel.findById(doctorId).session(session);  
+    if(!doctor){
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      })
+      return;
+    }
+    // Also check if doctor has upcoming appointment that should be cancelled
+    const upcomingAppointments = await AppointmentModel.find({
+      docId: doctorId,
+      slotDate:{
+        $gte: new Date().toISOString().split("T")[0] //today or future
+      },
+      cancelled: false,
+      isCompleted: false
+    }).session(session)
+
+    if(upcomingAppointments.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Cannot delete doctor with upcoming appointments. Cancel appointments first.",
+        data: {
+          upcomingAppointments: upcomingAppointments.length,
+          nextAppointment: upcomingAppointments[0]?.slotDate
+        }
+      });
+      return;
+    }
+    // Cancel all future appointment
+    await AppointmentModel.updateMany(
+      {
+        docId: doctorId,
+        slotDate: { $gte: new Date().toISOString().split('T')[0] },
+        cancelled: false
+      },
+      {
+        cancelled: true,
+        cancelledBy: "admin",
+        cancellationReason: "Doctor account deleted by admin",
+        cancelledAt: new Date()
+      },
+      { session }
+    );
+
+        await DoctorModel.findByIdAndDelete(doctorId).session(session);
+
+
+     await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Doctor deleted successfully",
+      data: {
+        doctorId: doctorId,
+        doctorName: doctor.name,
+        doctorEmail: doctor.email,
+        deletedAt: new Date(),
+        cancelledAppointments: upcomingAppointments.length
+      }
+    });
+
+  } catch (error: any) {
+    await session.abortTransaction();
+    
+    console.error("Delete doctor error:", error);
+
+    if (error.name === 'CastError') {
+      res.status(400).json({
+        success: false,
+        message: "Invalid doctor ID format"
+      });
+      return;
+    }
+
+    if (error.name === 'ValidationError') {
+      res.status(400).json({
+        success: false,
+        message: "Validation error: " + error.message
+      });
+      return;
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete doctor",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+
+  } finally {
+    await session.endSession();
+  }
+};
+
+
+const deleteUserByAdmin = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const session = await mongoose.startSession()
+  try {
+    await session.startTransaction()
+
+    const { userId } = req.body;
+    if(!userId) {
+      res.status(400).json({
+        success: false,
+        message: "User ID is required"
+      })
+      return
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid Doctor ID format"
+      });
+      return;
+    }
+
+    const user = await UserModel.findById(userId).session(session)
+    if(!user){
+      res.status(404).json({
+        success: false,
+        message: "User not found"
+      })
+      return
+    }
+
+    // check if user has a future appointment
+    const UserUpcomingAppointment = await AppointmentModel.find({
+      userID: userId,
+        slotDate:{
+        $gte: new Date().toISOString().split("T")[0] //today or future
+      },
+      cancelled: false,
+      isCompleted: false
+    }).session(session)
+    
+    if(UserUpcomingAppointment.length > 0){
+        res.status(400).json({
+        success: false,
+        message: "Cannot delete user with upcoming appointments. Cancel appointments first.",
+        data: {
+          upcomingAppointments: UserUpcomingAppointment.length,
+          nextAppointment: UserUpcomingAppointment[0]?.slotDate
+        }
+      });
+      return;
+    }
+
+       // Cancel all future appointment
+    await AppointmentModel.updateMany(
+      {
+        docId: userId,
+        slotDate: { $gte: new Date().toISOString().split('T')[0] },
+        cancelled: false
+      },
+      {
+        cancelled: true,
+        cancelledBy: "admin",
+        cancellationReason: "User account deleted by admin",
+        cancelledAt: new Date()
+      },
+      { session }
+    );
+
+    await UserModel.findByIdAndDelete(userId).session(session)
+    await session.commitTransaction()
+     res.status(200).json({
+      success: true,
+      message: "Doctor deleted successfully",
+      data: {
+        userId,
+        userName: user.name,
+        userEmail: user.email,
+        deletedAt: new Date(),
+        cancelledAppointments: UserUpcomingAppointment.length
+      }
+    });
+  } catch (error: any) {
+  await session.abortTransaction();
+    
+    console.error("Delete doctor error:", error);
+
+    if (error.name === 'CastError') {
+      res.status(400).json({
+        success: false,
+        message: "Invalid doctor ID format"
+      });
+      return;
+    }
+
+    if (error.name === 'ValidationError') {
+      res.status(400).json({
+        success: false,
+        message: "Validation error: " + error.message
+      });
+      return;
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete doctor",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+
+  } finally {
+    await session.endSession();
+  }
+}
 export {
   registerDoctor,
   loginAdmin,
@@ -492,5 +768,9 @@ export {
   appointmentsAdmin,
   appointmentCancel,
   adminDashboard,
-  changeAvailability
+  changeAvailability,
+  deleteDoctorByAdmin,
+  deleteUserByAdmin,
+  getAllUser
+  // seedInitialAdmin
 }
