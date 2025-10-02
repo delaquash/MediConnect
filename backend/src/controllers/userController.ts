@@ -517,69 +517,122 @@ const listAppointment= async(req: Request, res: Response, next: NextFunction): P
 
 // Cancel an existing appointment
 const cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  // Start MongoDB session for transaction support
   const session = await mongoose.startSession();
   
   try {
-    // Execute cancellation within transaction
-    await session.withTransaction(async () => {
-      // Get authenticated user ID from middleware
-      const userId = req.userId;
-      // Get appointment ID from request body
-      const { appointmentId } = req.body;
-      
-      // Find appointment that belongs to user and is not already cancelled
-      const appointment = await AppointmentModel.findOne({
-        _id: appointmentId,                  // Match appointment ID
-        userId,                              // Ensure appointment belongs to authenticated user
-        cancelled: false                     // Only find non-cancelled appointments
-      }).session(session);                   // Include in transaction
-      
-      // Check if appointment exists and is cancellable
-      if (!appointment) {
-        res.status(404).json({
-          success: false,
-          message: "Appointment not found or already cancelled"
-        });
-        return;                              // Cannot cancel non-existent or already cancelled appointment
-      }
-      
-      // Mark appointment as cancelled in database
-      await AppointmentModel.findByIdAndUpdate(
-        appointmentId,                       // Find appointment by ID
-        { cancelled: true },                 // Set cancelled field to true
-        { session }                          // Include in transaction
-      );
-      
-      // Find doctor and update their available slots
-      const doctor = await DoctorModel.findById(appointment.docId).session(session);
-      if (doctor) {                          // Only update if doctor still exists
-        // Create copy of doctor's booked slots
-        const updatedSlots = { ...doctor.slots_booked };
-        // Get current booked slots for appointment date
-        const dateSlots = updatedSlots[appointment.slotDate] || [];
-        // Remove cancelled appointment time from booked slots
-        updatedSlots[appointment.slotDate] = dateSlots.filter((slot: string) => slot !== appointment.slotTime);
-        
-        // Update doctor document with modified slots
-        await DoctorModel.findByIdAndUpdate(
-          appointment.docId,                 // Find doctor by ID
-          { slots_booked: updatedSlots },    // Update slots_booked field
-          { session }                        // Include in transaction
-        );
-      }
-      
-      // Send successful cancellation response
-      res.status(200).json({                 // 200 OK status
-        success: true,
-        message: "Appointment cancelled successfully"
+    await session.startTransaction(); // Use startTransaction instead of withTransaction
+    
+    // Get authenticated user ID from middleware
+    const userId = req.userId;
+    // Get appointment ID from request body
+    const { appointmentId } = req.body;
+    
+    // Validate appointmentId
+    if (!appointmentId) {
+      res.status(400).json({
+        success: false,
+        message: "Appointment ID is required"
       });
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid appointment ID format"
+      });
+      return;
+    }
+    
+    // Find appointment that belongs to user and is not already cancelled
+    const appointment = await AppointmentModel.findOne({
+      _id: appointmentId,
+      userId,
+      cancelled: false
+    }).session(session);
+    
+    // Check if appointment exists and is cancellable
+    if (!appointment) {
+      await session.abortTransaction();
+      res.status(404).json({
+        success: false,
+        message: "Appointment not found or already cancelled"
+      });
+      return;
+    }
+    
+    // MARK 1: Update appointment with comprehensive cancellation data
+    await AppointmentModel.findByIdAndUpdate(
+      appointmentId,
+      { 
+        cancelled: true,
+        cancelledBy: "user",
+        cancellationReason: "Cancelled by user",
+        cancelledAt: new Date()
+      },
+      { session, new: true }
+    );
+    
+    // MARK 2: Find doctor and update their available slots
+    const doctor = await DoctorModel.findById(appointment.docId).session(session);
+    if (doctor) {
+      const updatedSlots = { ...doctor.slots_booked };
+      const dateSlots = updatedSlots[appointment.slotDate] || [];
+      
+      // Remove cancelled appointment time from booked slots
+      updatedSlots[appointment.slotDate] = dateSlots.filter((slot: string) => slot !== appointment.slotTime);
+      
+      // Remove date entry if no slots left
+      if (updatedSlots[appointment.slotDate].length === 0) {
+        delete updatedSlots[appointment.slotDate];
+      }
+      
+      await DoctorModel.findByIdAndUpdate(
+        appointment.docId,
+        { slots_booked: updatedSlots },
+        { session }
+      );
+    }
+    
+    // MARK 3: Commit transaction BEFORE sending response
+    await session.commitTransaction();
+    
+    // Send successful cancellation response
+    res.status(200).json({
+      success: true,
+      message: "Appointment cancelled successfully",
+      data: {
+        appointmentId: appointmentId,
+        cancelledAt: new Date(),
+        slotFreed: {
+          date: appointment.slotDate,
+          time: appointment.slotTime
+        }
+      }
     });
-  } catch (error) {
-    // Pass any errors to Express error middleware
-    next(error);
+    
+  } catch (error: any) {
+    // MARK 4: Always abort transaction on error
+    await session.abortTransaction();
+    
+    console.error("Cancel appointment error:", error);
+    
+    if (error.name === 'CastError') {
+      res.status(400).json({
+        success: false,
+        message: "Invalid appointment ID format"
+      });
+      return;
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel appointment",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+    
   } finally {
-    // Always end the MongoDB session
+    // MARK 5: Always end the session
     await session.endSession();
   }
 };
