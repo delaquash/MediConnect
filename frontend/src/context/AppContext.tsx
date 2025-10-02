@@ -108,8 +108,6 @@ export const api = {
 
 getUserAppointment: async(backendUrl: string, token: string) => {
   try {
-    console.log('API call starting with token:', token);
-    
     const { data } = await axios.get(`${backendUrl}/user/appointments`, {
       headers: { token }
     });
