@@ -28,7 +28,17 @@ const getAllUser= async(req: Request, res: Response, next: NextFunction): Promis
 
 const registerDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, email, password } = req.body;
+    const { 
+      name, 
+      email, 
+      password,
+      speciality,
+      degree, 
+      experience, 
+      about, 
+      fees, 
+      address 
+    } = req.body;
 
     if (!name || !email || !password) {
       res.status(400).json({
@@ -79,8 +89,15 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
     let doctor;
 
     if (existingDoctor && !existingDoctor.isEmailVerified) {
+      // Update existing unverified doctor with all fields
       existingDoctor.name = name.trim();
       existingDoctor.password = password.trim();
+      existingDoctor.specialty = speciality || null;
+      existingDoctor.degree = degree || null;
+      existingDoctor.experience = experience || null;
+      existingDoctor.about = about || null;
+      existingDoctor.fees = fees || null;
+      existingDoctor.address = address || null;
       existingDoctor.emailVerificationToken = otpHash;  
       existingDoctor.emailVerificationOTPExpires = otpExpiry;
       existingDoctor.isEmailVerified = false;  
@@ -88,17 +105,18 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
 
       doctor = await existingDoctor.save();
     } else {
+      // Create new doctor with all fields
       doctor = new DoctorModel({
         name: name.trim(),
         email: trimmedEmail,
         password: password.trim(),
-        image: null,
-        specialty: null,
-        degree: null,
-        experience: null,
-        about: null,
-        fees: null,
-        address: null,
+        image: null, // You can add image later
+        specialty: speciality || null,
+        degree: degree || null,
+        experience: experience || null,
+        about: about || null,
+        fees: fees || null,
+        address: address || null,
         available: true,
         isEmailVerified: false,
         emailVerificationToken: otpHash,
@@ -139,7 +157,7 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
       message: "Registration successful! Please check your email for the verification code.",
       doctorId: doctor._id,
       email: trimmedEmail,
-      name: name.trim()
+      doctor
     });
 
   } catch (error: any) {
