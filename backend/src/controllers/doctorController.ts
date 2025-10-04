@@ -450,6 +450,15 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
 
 const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+
+     // TEMPORARY DEBUG - Remove after fixing
+    console.log('Cloudinary Config Check:', {
+      cloud_name: process.env.CLOUDINARY_NAME ? 'Set' : 'MISSING',
+      api_key: process.env.CLOUDINARY_API_KEY ? 'Set' : 'MISSING',
+      api_secret: process.env.CLOUDINARY_SECRET_KEY ? 'Set' : 'MISSING'
+    });
+
+    
     const docId = req.docId
     const imageFile = req.file;
     let {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
@@ -614,6 +623,8 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 }
+
+
 const completeDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
    const docId = req.docId
