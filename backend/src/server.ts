@@ -37,10 +37,6 @@ async function startServer() {
     await connectDB();
     console.log("Database connected");
 
-    // Connect to Cloudinary
-    connectCloudinary();
-    console.log("Cloudinary connected");
-
     // Initialize email service (with error handling)
     try {
       await EmailService.initialize();

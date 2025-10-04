@@ -8,6 +8,8 @@ import UserModel from '../model/userModel';
 import { createOTp } from '../utils/token';
 import EmailService from '../services/emailService';
 import AdminModel from '../model/adminModel';
+import { v2 as cloudinary } from 'cloudinary';
+
 
 const getAllUser= async(req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -31,14 +33,16 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
     const { 
       name, 
       email, 
-      password,
-      speciality,
+      password, 
+      specialty, 
       degree, 
       experience, 
       about, 
       fees, 
       address 
     } = req.body;
+    
+    const imageFile = req.file;
 
     if (!name || !email || !password) {
       res.status(400).json({
@@ -74,7 +78,6 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
 
     const existingDoctor = await DoctorModel.findOne({ email: trimmedEmail });
 
-    // If doctor exists and is verified, reject registration
     if (existingDoctor && existingDoctor.isEmailVerified) {
       res.status(409).json({
         success: false,
@@ -83,45 +86,83 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
       return;
     }
 
+    // Handle image upload to Cloudinary
+    let imageUrl = null;
+    if (imageFile) {
+      try {
+        const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+        
+        const result = await cloudinary.uploader.upload(fileStr, {
+          folder: 'doctors-profiles',
+          resource_type: 'auto',
+          transformation: [
+            { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+            { quality: 'auto:good' }
+          ]
+        });
+        
+        imageUrl = result.secure_url;
+      } catch (uploadError) {
+        console.error("❌ Image upload error:", uploadError);
+        res.status(500).json({
+          success: false,
+          message: "Failed to upload profile image"
+        });
+        return;
+      }
+    }
+
     const { otp, hash: otpHash } = createOTp(6);
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); 
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     let doctor;
 
+    // Parse address if it's a string
+    let addressData = null;
+    if (address) {
+      try {
+        addressData = typeof address === 'string' ? JSON.parse(address) : address;
+      } catch (e) {
+        addressData = null;
+      }
+    }
+
     if (existingDoctor && !existingDoctor.isEmailVerified) {
-      // Update existing unverified doctor with all fields
+      // Update existing unverified doctor with full profile
       existingDoctor.name = name.trim();
       existingDoctor.password = password.trim();
-      existingDoctor.specialty = speciality || null;
+      existingDoctor.emailVerificationToken = otpHash;
+      existingDoctor.emailVerificationOTPExpires = otpExpiry;
+      existingDoctor.image = typeof imageUrl === 'string' ? imageUrl : undefined;
+      existingDoctor.specialty = specialty || null;
       existingDoctor.degree = degree || null;
       existingDoctor.experience = experience || null;
       existingDoctor.about = about || null;
       existingDoctor.fees = fees || null;
-      existingDoctor.address = address || null;
-      existingDoctor.emailVerificationToken = otpHash;  
-      existingDoctor.emailVerificationOTPExpires = otpExpiry;
-      existingDoctor.isEmailVerified = false;  
+      existingDoctor.address = addressData;
+      existingDoctor.profileComplete = !!(specialty && degree && experience && about && fees && addressData);
       existingDoctor.updatedAt = new Date();
 
       doctor = await existingDoctor.save();
     } else {
-      // Create new doctor with all fields
+      // Create new doctor with full profile
       doctor = new DoctorModel({
         name: name.trim(),
         email: trimmedEmail,
         password: password.trim(),
-        image: null, // You can add image later
-        specialty: speciality || null,
+        image: imageUrl,
+        specialty: specialty || null,
         degree: degree || null,
         experience: experience || null,
         about: about || null,
         fees: fees || null,
-        address: address || null,
+        address: addressData,
         available: true,
         isEmailVerified: false,
         emailVerificationToken: otpHash,
         emailVerificationOTPExpires: otpExpiry,
-        profileComplete: false,
+        profileComplete: !!(specialty && degree && experience && about && fees && addressData),
+        profileCompletedAt: !!(specialty && degree && experience && about && fees && addressData) ? new Date() : null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -130,38 +171,30 @@ const registerDoctor = async (req: Request, res: Response, next: NextFunction): 
     }
     
     const emailSent = await EmailService.sendVerificationOTP(
-        trimmedEmail,
-        otp,
-        "doctor"
-      );
+      trimmedEmail,
+      otp,
+      "doctor"
+    );
 
-    try {   
-      if (!emailSent) {
-        throw new Error('Email service returned false');
-      }
-    } catch (emailError) {
-      // Clean up: delete doctor record if it's a new registration and email fails
+    if (!emailSent) {
       if (!existingDoctor) {
         await DoctorModel.findByIdAndDelete(doctor._id);
       }
-
-      res.status(500).json({
-        success: false,
-        message: "Failed to send verification email. Please try again."
-      });
-      return;
+      throw new Error('Email service failed');
     }
 
     res.status(201).json({
       success: true,
-      message: "Registration successful! Please check your email for the verification code.",
+      message: "Doctor registered successfully! Please check your email for verification.",
       doctorId: doctor._id,
       email: trimmedEmail,
-      doctor
+      name: name.trim(),
+      image: doctor.image,
+      profileComplete: doctor.profileComplete
     });
 
   } catch (error: any) {
-    console.error('Registration error:', error);
+    console.error('Doctor registration error:', error);
     next(error);
   }
 };
