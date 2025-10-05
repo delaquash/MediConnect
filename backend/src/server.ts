@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+dotenv.config();
 import express, { Request, Response } from 'express';
 import cors from "cors";
 import { connectDB } from "./config/database";
@@ -8,8 +9,6 @@ import doctorRouter from "./routes/doctorRoutes";
 import userRouter from "./routes/userRoutes";
 import passwordRouter from "./routes/PasswordResetRoutes";
 import EmailService from "./services/emailService";
-
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -38,7 +37,7 @@ async function startServer() {
     // Initialize email service (with error handling)
     try {
       await EmailService.initialize();
-      console.log("Email service initialized");
+
     } catch (emailError:any) {
       console.warn("⚠️ Email service failed to initialize:", emailError.message);
       console.log("Server will continue without email functionality");

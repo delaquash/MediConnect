@@ -450,22 +450,13 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
 
 const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-
-     // TEMPORARY DEBUG - Remove after fixing
-    console.log('Cloudinary Config Check:', {
-      cloud_name: process.env.CLOUDINARY_NAME ? 'Set' : 'MISSING',
-      api_key: process.env.CLOUDINARY_API_KEY ? 'Set' : 'MISSING',
-      api_secret: process.env.CLOUDINARY_SECRET_KEY ? 'Set' : 'MISSING'
-    });
-
-    
     const docId = req.docId
     const imageFile = req.file;
-    let {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
+    let {name, phone, specialty, degree, experience, about, fees, address} = req.body;
 
     console.log('=== DEBUG INFO ===');
-    console.log('imageFile:', imageFile);
-    console.log('req.body:', req.body);
+    console.log('imageFile:', imageFile ? 'Present' : 'Not present');
+    console.log('req.body keys:', Object.keys(req.body));
     console.log('==================');
 
     if(!docId){
@@ -477,7 +468,7 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
     }
 
     // Parse JSON strings from form-data
-    if (typeof address === 'string') {
+    if (address && typeof address === 'string') {
       try {
         address = JSON.parse(address);
       } catch (e) {
@@ -501,22 +492,20 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
       }
     }
 
-    // Convert experience to string/number as needed
-    if (experience !== undefined && typeof experience === 'string') {
-      experience = experience.trim();
-    }
-
-    console.log('Before validation - imageFile exists:', !!imageFile);
-
-    const errors = validateProfileData({ name, phone, image, specialty, degree, experience, about, fees, address}, false)
-    if (errors && errors.length > 0) {
-      console.log('Validation errors:', errors);
-      res.status(400).json({
-        success: false,
-        message: "Profile validation failed",
-        errors
-      });
-      return;
+    // Only validate if we have fields to validate
+    const hasFieldsToValidate = name || phone || specialty || degree || experience || about || fees || address;
+    
+    if (hasFieldsToValidate) {
+      const errors = validateProfileData({ name, phone, image: undefined, specialty, degree, experience, about, fees, address}, false)
+      if (errors && errors.length > 0) {
+        console.log('Validation errors:', errors);
+        res.status(400).json({
+          success: false,
+          message: "Profile validation failed",
+          errors
+        });
+        return;
+      }
     }
 
     const doc = await DoctorModel.findById(docId);
@@ -546,24 +535,12 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
     if(fees !== undefined) updateDocData.fees = fees;
     if(address !== undefined) updateDocData.address = trimmedAddress;
 
-    console.log('About to check imageFile:', !!imageFile);
-
     // cloudinary to handle image upload
     if (imageFile) {
-      console.log('ImageFile detected, starting upload...');
-      console.log('ImageFile details:', {
-        fieldname: imageFile.fieldname,
-        originalname: imageFile.originalname,
-        mimetype: imageFile.mimetype,
-        size: imageFile.size,
-        bufferExists: !!imageFile.buffer
-      });
-
+      console.log('Starting Cloudinary upload...');
       try {
         const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
-        console.log('Base64 string created, length:', fileStr.length);
       
-        console.log('Uploading to Cloudinary...');
         const result = await cloudinary.uploader.upload(fileStr, {
           folder: 'doctors-profiles',
           resource_type: 'auto',
@@ -573,10 +550,10 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
           ]
         });
         
-        console.log('Cloudinary upload successful:', result.secure_url);
+        console.log('Cloudinary upload successful!');
         updateDocData.image = result.secure_url;
       } catch (uploadError) {
-        console.error("Image upload error:", uploadError);
+        console.error("Cloudinary upload error:", uploadError);
         res.status(500).json({
           success: false,
           message: "Failed to upload image",
@@ -584,11 +561,7 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
         });
         return;
       }
-    } else {
-      console.log('No imageFile detected in request');
     }
-
-    console.log('updateDocData before save:', updateDocData);
 
     const updatedDocTemp = { ...doc.toObject(), ...updateDocData}
 
@@ -615,7 +588,7 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
     
     res.status(200).json({
       success: true,
-      message: "Doctors Profile updated successfully",
+      message: "Doctor's Profile updated successfully",
       user: updatedDocProfile
     });
   } catch (error) {
@@ -623,7 +596,6 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 }
-
 
 const completeDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
