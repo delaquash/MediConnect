@@ -104,23 +104,23 @@ class EmailService {
       // Provide helpful error messages based on common issues
       if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
         console.error('   Connection Timeout Troubleshooting:');
-        console.error('   1. Check your internet connection');
-        console.error('   2. Try connecting to Gmail manually in browser');
-        console.error('   3. Check if corporate firewall blocks SMTP (ports 587/465)');
-        console.error('   4. Try running on different network (mobile hotspot)');
-        console.error('   5. Temporarily disable antivirus/firewall');
+        // console.error('   1. Check your internet connection');
+        // console.error('   2. Try connecting to Gmail manually in browser');
+        // console.error('   3. Check if corporate firewall blocks SMTP (ports 587/465)');
+        // console.error('   4. Try running on different network (mobile hotspot)');
+        // console.error('   5. Temporarily disable antivirus/firewall');
       } else if (error.message.includes('authentication') || error.code === 535) {
         console.error('   Authentication Troubleshooting:');
-        console.error('   1. Verify EMAIL_USER is your full Gmail address');
-        console.error('   2. Ensure EMAIL_APP_PASSWORD is 16-character App Password');
-        console.error('   3. Enable 2-factor authentication on Gmail');
-        console.error('   4. Generate new App Password in Gmail settings');
-        console.error('   5. Check if "Less secure app access" is disabled (should be)');
+        // console.error('   1. Verify EMAIL_USER is your full Gmail address');
+        // console.error('   2. Ensure EMAIL_APP_PASSWORD is 16-character App Password');
+        // console.error('   3. Enable 2-factor authentication on Gmail');
+        // console.error('   4. Generate new App Password in Gmail settings');
+        // console.error('   5. Check if "Less secure app access" is disabled (should be)');
       } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
         console.error('   Network/DNS Issues:');
-        console.error('   1. Check DNS resolution: ping smtp.gmail.com');
-        console.error('   2. Try different DNS servers (8.8.8.8, 1.1.1.1)');
-        console.error('   3. Check if VPN is interfering');
+        // console.error('   1. Check DNS resolution: ping smtp.gmail.com');
+        // console.error('   2. Try different DNS servers (8.8.8.8, 1.1.1.1)');
+        // console.error('   3. Check if VPN is interfering');
       }
       
       throw error;

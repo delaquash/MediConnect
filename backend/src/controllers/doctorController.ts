@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
 import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
 import { validateProfileData } from '../helper/validateProfileData';
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary  from "../config/cloudinary";
 
 
 const doctorList = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -452,7 +452,12 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
   try {
     const docId = req.docId
     const imageFile = req.file;
-    const {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
+    let {name, phone, specialty, degree, experience, about, fees, address} = req.body;
+
+    console.log('=== DEBUG INFO ===');
+    console.log('imageFile:', imageFile ? 'Present' : 'Not present');
+    console.log('req.body keys:', Object.keys(req.body));
+    console.log('==================');
 
     if(!docId){
       res.status(401).json({
@@ -462,14 +467,45 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const errors = validateProfileData({ name, phone, image, specialty, degree, experience, about, fees, address}, false)
-    if (errors && errors.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: "Profile validation failed",
-        errors
-      });
-      return;
+    // Parse JSON strings from form-data
+    if (address && typeof address === 'string') {
+      try {
+        address = JSON.parse(address);
+      } catch (e) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid address format"
+        });
+        return;
+      }
+    }
+
+    // Convert fees to number if it's a string
+    if (fees !== undefined && typeof fees === 'string') {
+      fees = parseFloat(fees);
+      if (isNaN(fees)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid fees format"
+        });
+        return;
+      }
+    }
+
+    // Only validate if we have fields to validate
+    const hasFieldsToValidate = name || phone || specialty || degree || experience || about || fees || address;
+    
+    if (hasFieldsToValidate) {
+      const errors = validateProfileData({ name, phone, image: undefined, specialty, degree, experience, about, fees, address}, false)
+      if (errors && errors.length > 0) {
+        console.log('Validation errors:', errors);
+        res.status(400).json({
+          success: false,
+          message: "Profile validation failed",
+          errors
+        });
+        return;
+      }
     }
 
     const doc = await DoctorModel.findById(docId);
@@ -481,78 +517,82 @@ const updateDoctorProfile = async (req: Request, res: Response, next: NextFuncti
       return
     }
 
-    const trimmedAddress = Object.fromEntries(
-      Object.entries(address || {}).map(([key, value]) => [
+    const trimmedAddress = address ? Object.fromEntries(
+      Object.entries(address).map(([key, value]) => [
         key,
         typeof value === "string" ? value.trim() : value
       ])
-    );
-    // image, specialty, degree, experience, about, fees, address } = req.body;
-  const updateDocData: any = {}
+    ) : undefined;
 
-  if( name !== undefined) updateDocData.name = name.trim();
-  if(phone !== undefined) updateDocData.phone = phone.trim();
-  if(specialty !== undefined) updateDocData.specialty = specialty.trim();
-  if(degree !== undefined) updateDocData.degree = degree.trim();
-  if(experience !== undefined) updateDocData.experience = experience.trim();
-  if(about !== undefined) updateDocData.about = about.trim();
-  if(fees !== undefined) updateDocData.fees = fees;
-  if(address !== undefined) updateDocData.address = trimmedAddress;
+    const updateDocData: any = {}
 
-  // cloudinary to handle image upload
-  if (imageFile) {
-        try {
-          
-          const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
+    if(name !== undefined) updateDocData.name = name.trim();
+    if(phone !== undefined) updateDocData.phone = phone.trim();
+    if(specialty !== undefined) updateDocData.specialty = specialty.trim();
+    if(degree !== undefined) updateDocData.degree = degree.trim();
+    if(experience !== undefined) updateDocData.experience = typeof experience === 'string' ? experience.trim() : experience;
+    if(about !== undefined) updateDocData.about = about.trim();
+    if(fees !== undefined) updateDocData.fees = fees;
+    if(address !== undefined) updateDocData.address = trimmedAddress;
+
+    // cloudinary to handle image upload
+    if (imageFile) {
+      console.log('Starting Cloudinary upload...');
+      try {
+        const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+      
+        const result = await cloudinary.uploader.upload(fileStr, {
+          folder: 'doctors-profiles',
+          resource_type: 'auto',
+          transformation: [
+            { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+            { quality: 'auto:good' }
+          ]
+        });
         
-          const result = await cloudinary.uploader.upload(fileStr, {
-            folder: 'doctors-profiles',
-            resource_type: 'auto',
-            transformation: [
-              { width: 500, height: 500, crop: 'fill', gravity: 'face' },
-              { quality: 'auto:good' }
-            ]
-          });
-          
-          updateDocData.image = result.secure_url;
-        } catch (uploadError) {
-          console.error("Image upload error:", uploadError);
-          res.status(500).json({
-            success: false,
-            message: "Failed to upload image"
-          });
-          return;
-        }
+        console.log('Cloudinary upload successful!');
+        updateDocData.image = result.secure_url;
+      } catch (uploadError) {
+        console.error("Cloudinary upload error:", uploadError);
+        res.status(500).json({
+          success: false,
+          message: "Failed to upload image",
+          error: uploadError instanceof Error ? uploadError.message : 'Unknown error'
+        });
+        return;
       }
+    }
 
-      const updatedDocTemp ={ ...doc.toObject(), ...updateDocData}
+    const updatedDocTemp = { ...doc.toObject(), ...updateDocData}
 
-      // check if all required fields are now present
-      const isProfileComplete = ["image", "specialty", "degree", "experience", "about", "fees", "address"].every(field=>{
-        const value = field.split('.').reduce((obj, key) => obj?.[key], updatedDocTemp);
-        return value !== null && value !== undefined && value !== '';
-      })
+    // check if all required fields are now present
+    const isProfileComplete = ["image", "specialty", "degree", "experience", "about", "fees", "address"].every(field => {
+      const value = field.split('.').reduce((obj, key) => obj?.[key], updatedDocTemp);
+      return value !== null && value !== undefined && value !== '';
+    })
 
-      // if profile wasnt complete before, but it is now complete, mark it 
-      if(isProfileComplete && !doc.profileComplete) {
-        updateDocData.profileComplete = true
-        updateDocData.profileCompletedAt = new Date()
+    // if profile wasn't complete before, but it is now complete, mark it 
+    if(isProfileComplete && !doc.profileComplete) {
+      updateDocData.profileComplete = true
+      updateDocData.profileCompletedAt = new Date()
+    }
+
+    const updatedDocProfile = await DoctorModel.findByIdAndUpdate(
+      docId,
+      updateDocData,
+      {
+        new: true,
+        runValidators: true
       }
-
-      const updatedDocProfile = await DoctorModel.findByIdAndUpdate(
-        docId,
-        updateDocData,
-        {
-          new: true,
-          runValidators: true
-        }
-      ).select("-password")
-      res.status(200).json({
+    ).select("-password")
+    
+    res.status(200).json({
       success: true,
-      message: "Doctors Profile updated successfully",
+      message: "Doctor's Profile updated successfully",
       user: updatedDocProfile
     });
   } catch (error) {
+    console.error('Controller error:', error);
     next(error);
   }
 }
