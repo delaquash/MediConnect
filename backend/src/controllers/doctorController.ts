@@ -23,9 +23,7 @@ const doctorList = async (req: Request, res: Response, next: NextFunction): Prom
 
 const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-
         if (!req.body) {
-
             res.status(400).json({
                 success: false,
                 message: "Request body is required"
@@ -36,30 +34,56 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
         const { email, password } = req.body
 
         if (!email || !password) {
-            res.status(400).json({ success: false, message: "Email and password are required" });
+            res.status(400).json({ 
+                success: false, 
+                message: "Email and password are required" 
+            });
             return;
         }
-        const doctor = await DoctorModel.findOne({ email })
 
-           if (!doctor) {
-                 res.json({ success: false, message: "Invalid credentials" });
-                 return;
-           }
+        // Find doctor by email
+        const doctor = await DoctorModel.findOne({ email }).select("+password");
 
-            const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET!, {
-                expiresIn: "30d" })
-    
-
-           res.status(200).json({
-                success: true,
-                message: "Login successful",
-               token,
-               doctor
+        if (!doctor) {
+            res.status(401).json({ 
+                success: false, 
+                message: "Invalid credentials" 
             });
+            return;
+        }
+
+        // ✅ Use the comparePassword method from your model
+        const isPasswordValid = await doctor.comparePassword(password);
+        
+        if (!isPasswordValid) {
+            res.status(401).json({
+                success: false,
+                message: "Invalid credentials"
+            });
+            return;
+        }
+
+        // Generate token
+        const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET!, {
+            expiresIn: "30d" 
+        });
+
+        // Don't send password in response
+        const doctorResponse = doctor.toObject();
+        // delete doctorResponse?.password;
+
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            token,
+            doctor: doctorResponse
+        });
+
     } catch (error) {
         next(error);
     }
 }
+
 
 const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
