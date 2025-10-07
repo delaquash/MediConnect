@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tan
 import { toast } from "react-toastify";
 import axios from 'axios';
 
+// const backendUrl = import.meta.env.VITE_BACKEND_URL;
 // Types
 interface Doctor {
   _id: string;
@@ -56,7 +57,37 @@ export const useAppContext = () => {
 };
 
 // API functions with proper typing
-const api = {
+export const api = {
+  // login user
+  loginUser: async (backendUrl: string, email: string, password: string) => {
+    const { data } = await axios.post(`${backendUrl}/user/login`, {
+      email,
+      password
+    })
+    if(!data.success){
+      throw new Error(data.message)
+    }
+    // console.log(data)
+  // if (!data.userData) {
+  //   console.error('userData is undefined in response:', data);
+  //   throw new Error('User data not found in response');
+  // }
+    return data
+  },
+  
+  // register user
+  registerUser:async (backendUrl: string, email: string, password: string, name: string)=>{
+    const { data } = await axios.post(`${backendUrl}/register`, {
+      name,
+      email,
+      password
+    })
+    if(!data.success){
+      throw new Error(data.message)
+    }
+
+    return data.user
+  },
   getDoctors: async (backendUrl: string): Promise<Doctor[]> => {
     const { data } = await axios.get(`${backendUrl}/doctor/list`);
     if (!data.success) {
@@ -72,9 +103,26 @@ const api = {
     if (!data.success) {
       throw new Error(data.message);
     }
-    return data?.userData;
+    return data?.userProfile;
+  },
+
+getUserAppointment: async(backendUrl: string, token: string) => {
+  try {
+    const { data } = await axios.get(`${backendUrl}/user/appointments`, {
+      headers: { token }
+    });
+
+    if (!data.success) {
+      throw new Error(data.message);
+    }
+    
+    return data.userAppointment;
+  } catch (error) {
+    console.error('API call failed:', error);
+    throw error;
   }
-};
+},
+}
 
 export const useDoctors = (): UseQueryResult<Doctor[], Error> => {
   const { backendUrl } = useAppContext();
@@ -87,17 +135,6 @@ export const useDoctors = (): UseQueryResult<Doctor[], Error> => {
   });
 };
 
-export const useUserProfile = (): UseQueryResult<UserData, Error> => {
-  const { backendUrl, token } = useAppContext();
-  
-  return useQuery<UserData, Error>({
-    queryKey: ['userProfile', token],
-    queryFn: () => api.getUserProfile(backendUrl, token),
-    enabled: !!token, // Only run if token exists
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
 
 
 export const useDoctorsWithErrorHandling = () => {
@@ -121,45 +158,17 @@ export const useDoctorsWithErrorHandling = () => {
   return query;
 };
 
-// Custom hook for mutations
-export const useUpdateUserProfile = () => {
-  const { backendUrl, token } = useAppContext();
-  const queryClient = useQueryClient();
 
-  return useMutation<UserData, Error, Partial<UserData>>({
-    mutationFn: async (userData: Partial<UserData>) => {
-      const { data } = await axios.put(
-        `${backendUrl}/user/update-profile`,
-        userData,
-        { headers: { token } }
-      );
-      if (!data.success) {
-        throw new Error(data.message);
-      }
-      return data.userData;
-    },
-    onSuccess: (userData) => {
-      // Update the cache
-      queryClient.setQueryData(['userProfile', token], userData);
-      toast.success('Profile updated successfully');
-    },
-    onError: (error: Error) => {
-      console.error(error);
-      toast.error(error.message || 'Failed to update profile');
-    },
-  });
-};
-
-// Book appointment mutation
+// Fixed hooks
 export const useBookAppointment = () => {
   const { backendUrl, token } = useAppContext();
   const queryClient = useQueryClient();
 
-  return useMutation<any, Error, { doctorId: string; slotDate: string; slotTime: string }>({
-    mutationFn: async ({ doctorId, slotDate, slotTime }) => {
+  return useMutation<any, Error, { docId: string; slotDate: string; slotTime: string }>({
+    mutationFn: async ({ docId, slotDate, slotTime }) => {
       const { data } = await axios.post(
         `${backendUrl}/user/book-appointment`,
-        { doctorId, slotDate, slotTime },
+        { docId, slotDate, slotTime },
         { headers: { token } }
       );
       if (!data.success) {
@@ -168,22 +177,21 @@ export const useBookAppointment = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidate appointments query to refetch
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['userAppointments'] }); // Consistent key
       toast.success('Appointment booked successfully');
     },
     onError: (error: Error) => {
-      console.error(error);
       toast.error(error.message || 'Failed to book appointment');
     },
   });
 };
 
+
 // Context Provider - now only for client state
 const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
   const queryClient = useQueryClient();
   const currencySymbol = '₹';
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+   const backendUrl = import.meta.env.VITE_BACKEND_URL as string;
   const [token, setTokenState] = useState(
     localStorage.getItem('token') || ''
   );

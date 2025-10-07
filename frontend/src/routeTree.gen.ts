@@ -9,18 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as MyprofileRouteImport } from './routes/myprofile'
 import { Route as MyappointmentRouteImport } from './routes/myappointment'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as CreateAccountRouteImport } from './routes/createAccount'
 import { Route as ContactRouteImport } from './routes/contact'
-import { Route as AppointmentRouteImport } from './routes/appointment'
+import { Route as AppointmentsRouteImport } from './routes/appointments'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DoctorsIndexRouteImport } from './routes/doctors/index'
 import { Route as DoctorsSpecialityRouteImport } from './routes/doctors/$speciality'
 import { Route as AppointmentDocIdRouteImport } from './routes/appointment/$docId'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyprofileRoute = MyprofileRouteImport.update({
   id: '/myprofile',
   path: '/myprofile',
@@ -36,19 +41,14 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CreateAccountRoute = CreateAccountRouteImport.update({
-  id: '/createAccount',
-  path: '/createAccount',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppointmentRoute = AppointmentRouteImport.update({
-  id: '/appointment',
-  path: '/appointment',
+const AppointmentsRoute = AppointmentsRouteImport.update({
+  id: '/appointments',
+  path: '/appointments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -72,20 +72,20 @@ const DoctorsSpecialityRoute = DoctorsSpecialityRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppointmentDocIdRoute = AppointmentDocIdRouteImport.update({
-  id: '/$docId',
-  path: '/$docId',
-  getParentRoute: () => AppointmentRoute,
+  id: '/appointment/$docId',
+  path: '/appointment/$docId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/appointment': typeof AppointmentRouteWithChildren
+  '/appointments': typeof AppointmentsRoute
   '/contact': typeof ContactRoute
-  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
+  '/register': typeof RegisterRoute
   '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
   '/doctors': typeof DoctorsIndexRoute
@@ -93,12 +93,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/appointment': typeof AppointmentRouteWithChildren
+  '/appointments': typeof AppointmentsRoute
   '/contact': typeof ContactRoute
-  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
+  '/register': typeof RegisterRoute
   '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
   '/doctors': typeof DoctorsIndexRoute
@@ -107,12 +107,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/appointment': typeof AppointmentRouteWithChildren
+  '/appointments': typeof AppointmentsRoute
   '/contact': typeof ContactRoute
-  '/createAccount': typeof CreateAccountRoute
   '/login': typeof LoginRoute
   '/myappointment': typeof MyappointmentRoute
   '/myprofile': typeof MyprofileRoute
+  '/register': typeof RegisterRoute
   '/appointment/$docId': typeof AppointmentDocIdRoute
   '/doctors/$speciality': typeof DoctorsSpecialityRoute
   '/doctors/': typeof DoctorsIndexRoute
@@ -122,12 +122,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
-    | '/appointment'
+    | '/appointments'
     | '/contact'
-    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
+    | '/register'
     | '/appointment/$docId'
     | '/doctors/$speciality'
     | '/doctors'
@@ -135,12 +135,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
-    | '/appointment'
+    | '/appointments'
     | '/contact'
-    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
+    | '/register'
     | '/appointment/$docId'
     | '/doctors/$speciality'
     | '/doctors'
@@ -148,12 +148,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
-    | '/appointment'
+    | '/appointments'
     | '/contact'
-    | '/createAccount'
     | '/login'
     | '/myappointment'
     | '/myprofile'
+    | '/register'
     | '/appointment/$docId'
     | '/doctors/$speciality'
     | '/doctors/'
@@ -162,18 +162,26 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  AppointmentRoute: typeof AppointmentRouteWithChildren
+  AppointmentsRoute: typeof AppointmentsRoute
   ContactRoute: typeof ContactRoute
-  CreateAccountRoute: typeof CreateAccountRoute
   LoginRoute: typeof LoginRoute
   MyappointmentRoute: typeof MyappointmentRoute
   MyprofileRoute: typeof MyprofileRoute
+  RegisterRoute: typeof RegisterRoute
+  AppointmentDocIdRoute: typeof AppointmentDocIdRoute
   DoctorsSpecialityRoute: typeof DoctorsSpecialityRoute
   DoctorsIndexRoute: typeof DoctorsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/myprofile': {
       id: '/myprofile'
       path: '/myprofile'
@@ -195,13 +203,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/createAccount': {
-      id: '/createAccount'
-      path: '/createAccount'
-      fullPath: '/createAccount'
-      preLoaderRoute: typeof CreateAccountRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/contact': {
       id: '/contact'
       path: '/contact'
@@ -209,11 +210,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/appointment': {
-      id: '/appointment'
-      path: '/appointment'
-      fullPath: '/appointment'
-      preLoaderRoute: typeof AppointmentRouteImport
+    '/appointments': {
+      id: '/appointments'
+      path: '/appointments'
+      fullPath: '/appointments'
+      preLoaderRoute: typeof AppointmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -246,35 +247,24 @@ declare module '@tanstack/react-router' {
     }
     '/appointment/$docId': {
       id: '/appointment/$docId'
-      path: '/$docId'
+      path: '/appointment/$docId'
       fullPath: '/appointment/$docId'
       preLoaderRoute: typeof AppointmentDocIdRouteImport
-      parentRoute: typeof AppointmentRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AppointmentRouteChildren {
-  AppointmentDocIdRoute: typeof AppointmentDocIdRoute
-}
-
-const AppointmentRouteChildren: AppointmentRouteChildren = {
-  AppointmentDocIdRoute: AppointmentDocIdRoute,
-}
-
-const AppointmentRouteWithChildren = AppointmentRoute._addFileChildren(
-  AppointmentRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  AppointmentRoute: AppointmentRouteWithChildren,
+  AppointmentsRoute: AppointmentsRoute,
   ContactRoute: ContactRoute,
-  CreateAccountRoute: CreateAccountRoute,
   LoginRoute: LoginRoute,
   MyappointmentRoute: MyappointmentRoute,
   MyprofileRoute: MyprofileRoute,
+  RegisterRoute: RegisterRoute,
+  AppointmentDocIdRoute: AppointmentDocIdRoute,
   DoctorsSpecialityRoute: DoctorsSpecialityRoute,
   DoctorsIndexRoute: DoctorsIndexRoute,
 }
