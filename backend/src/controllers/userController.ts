@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import UserModel from '../model/userModel';
+import UserModel, { IUser } from '../model/userModel';
+import mongoose from 'mongoose';
 import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
@@ -7,134 +8,244 @@ import DoctorModel from '../model/doctorModel';
 import AppointmentModel from '../model/appointmentModel';
 import { generateTimeSlots, isValidTimeSlot } from '../utils/timeSlot';
 import { isValidAppointmentDate } from '../utils/appointmentDate';
-import mongoose from 'mongoose';
-import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedRequest } from '../types/global';
+import { validateProfileData } from '../helper/validateProfileData';
+import { IProfileUpdateData } from '../types/type';
+import { createOTp, hashValue } from '../utils/token';
+import EmailService from '../services/emailService';
+import { checkUserProfileCompletion } from "../helper/CheckUserProfile"
+
 
 const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-   try {
-     const {name, email, password, image, address, gender, dob, phone  } = req.body
+  try {
+    const { name, email, password } = req.body
 
-    if (!name || !email || !password || !address || !image || !gender || !dob || !phone) {
-        res.status(400).json({
-            success: false,
-            message: "Please fill all fields"
-        });
-        return;
+    if (!name || !email || !password) {
+      res.status(400).json({
+        success: false,
+        message: "Please fill all fields"
+      });
+      return;
     }
 
-    if (!validator.isEmail(email)) {
-                res.status(400).json({ message: "Invalid email format" })
-                return; 
-            }
-            if (!validator.isStrongPassword(password, {
-                minLength: 8,
-                minLowercase: 1,
-                minUppercase: 1,
-                minNumbers: 1,
-                minSymbols: 1,
-            })) {
-                res.status(400).json({
-                    message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
-                });
-                return; // 
-            }
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
 
-              // Check if user already exists
-                const existingUser = await UserModel.findOne({ email });
-                if (existingUser) {
-                    res.status(409).json({
-                        success: false,
-                        message: "User already exists with this email"
-                    });
-                    return;
-                }
+    if (trimmedName.length < 2 || trimmedName.length > 50) {
+      res.status(400).json({
+        success: false,
+        message: "Name must be at least 2 characters long and less than 50 characters"
+      });
+      return;
+    }
 
+    if (!validator.isEmail(trimmedEmail)) {
+      res.status(400).json({
+        success: false, // ✅ Added missing success field
+        message: "Invalid email format"
+      });
+      return;
+    }
 
-            let uploadedImage: string ;
-            // ✅ Add file validation
-             if (req.file) {
-                // File upload - upload to Cloudinary
-                const fileStr = `data:${req.file?.mimetype};base64,${req.file?.buffer?.toString('base64')}`;
-                const result = await cloudinary.uploader.upload(fileStr, {
-                    folder: 'uploads',
-                    resource_type: 'auto',
-                });
-                uploadedImage = result.secure_url;
-            } else if (image) {
-                // Image URL provided
-                uploadedImage = image;
-            } else {
-                res.status(400).json({ message: "Doctor image is required (either upload file or provide image URL)" });
-                return;
-            }
+    if (!validator.isStrongPassword(trimmedPassword, {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+    })) {
+      res.status(400).json({
+        success: false, 
+        message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
+      });
+      return;
+    }
+
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email: trimmedEmail });
+    if (existingUser) {
+      res.status(409).json({
+        success: false,
+        message: "User already exists with this email"
+      });
+      return;
+    }
+
+    // Generate OTP and time for token to expire
+    const { otp, hash: otpHash } = createOTp(6); 
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); 
+
     const user = new UserModel({
-        name,
-        email,
-        password,
-        image: uploadedImage,
-        address,
-        dob,
-        phone
+      name: trimmedName,
+      email: trimmedEmail,
+      password: trimmedPassword,
+      image: null,
+      address: {
+        line1: "",
+        line2: ""
+      },
+      gender: null,
+      dob: null,
+      phone: null,
+      profileComplete: false,
+      isEmailVerified: false,
+      emailVerificationToken: otpHash,
+      passwordResetExpires: otpExpiry,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
 
     const newRegisteredUser = await user.save();
+    
 
-       const userResponse = {
-        _id: newRegisteredUser._id,
-        name: newRegisteredUser.name,
-        email: newRegisteredUser.email,
-        image: newRegisteredUser.image,
-        address: newRegisteredUser.address,
-        gender: newRegisteredUser.gender,
-        dob: newRegisteredUser.dob,
-        phone: newRegisteredUser.phone
-    };
+    // Send Email OTP
+    const sendEmailVerification = await EmailService.sendVerificationOTP(
+      trimmedEmail,
+      otp,
+      "user"
+    );
+
+    if (!sendEmailVerification) {
+      // Clean up - delete user if email fails
+      await UserModel.findByIdAndDelete(newRegisteredUser._id);
+      res.status(500).json({
+        success: false,
+        message: "Failed to send verification email. Please try again."
+      });
+      return;
+    }
 
     res.status(201).json({
-        success: true,
-        message: "User registered successfully",
-        userResponse
+      success: true,
+      message: "Registration successful! Please check your email for verification code.",
+      userId: newRegisteredUser._id,
+      email: trimmedEmail,
+      name: trimmedName
     });
-   } catch (error) {
-        next(error);
-    }
-    
+
+  } catch (error) {
+    console.error("Registration error:", error); 
+    next(error);
+  }
 }
-        
-const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const { email, password } = req.body;
-          if (!email || !password) {
-            res.status(400).json({ success: false, message: "Email and password are required" });
-            return;
-        }
 
-        const user = await UserModel.findOne({ email })
+const verifyUserOTP = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email, otp } = req.body;
 
-        if(!user) {
-             res.json({ success: false, message: "Invalid credentials" });
-                 return;
-        }
-
-        const token = jwt.sign({ id: user._id}, process.env.JWT_SECRET!, {
-            expiresIn: "30d"
-        })
-
-        res.status(200).json({
-            success: true,
-            message:"User login successfully",
-            token
-,        })
-    } catch (error) {
-        next(error)
+    // Validate input
+    if (!email || !otp) {
+      res.status(400).json({
+        success: false,
+        message: "Email and OTP are required"
+      });
+      return;
     }
+
+    // Hash the provided OTP to compare with stored hash
+    const otpHash = hashValue(otp);
+
+    // Find user with matching email and OTP hash
+    const user = await UserModel.findOne({
+      email: email.trim().toLowerCase(),
+      emailVerificationToken: otpHash,
+      isEmailVerified: false
+    });
+
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid verification code or email already verified"
+      });
+      return;
+    }
+
+    // Check if user is already verified (extra safety check)
+    if (user.isEmailVerified) {
+      res.status(400).json({
+        success: false,
+        message: "Email is already verified"
+      });
+      return;
+    }
+
+    // Update user - mark as verified and clear verification data
+    user.isEmailVerified = true;
+    user.emailVerificationOTP = null;
+    user.emailVerificationOTPExpires = null;
+    await user.save();
+
+    // Generate JWT token for the newly verified user
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Send welcome email (optional)
+    try {
+      await EmailService.sendWelcomeEmail(user.email, user.name, 'user');
+      console.log('✅ Welcome email sent to:', user.email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send welcome email:', emailError);
+      // Don't fail the verification if welcome email fails
+    }
+
+    console.log('✅ User email verified successfully:', user.email);
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully!",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isEmailVerified: true
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ OTP verification error:', error);
+    next(error);
+  }
+};
+
+const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400).json({ success: false, message: "Email and password are required" });
+      return;
+    }
+
+    const user = await UserModel.findOne({ email })
+
+    if (!user) {
+      res.json({ success: false, message: "Invalid credentials" });
+      return;
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
+      expiresIn: "30d"
+    })
+
+    res.status(200).json({
+      success: true,
+      message: "User login successfully",
+      token,
+      user
+    })
+  } catch (error) {
+    next(error)
+  }
 }
 
 const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.userId;
-    
+
     if (!userId) {
       res.status(401).json({
         success: false,
@@ -142,9 +253,9 @@ const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFu
       });
       return;
     }
-    
+
     const userProfile = await UserModel.findById(userId).select("-password");
-    
+
     if (!userProfile) {
       res.status(404).json({
         success: false,
@@ -152,228 +263,232 @@ const getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFu
       });
       return;
     }
-    
+
     res.status(200).json({
       success: true,
       message: "User profile successfully retrieved",
       userProfile
     });
-    
+
   } catch (error) {
     next(error);
   }
 };
 
 const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        // Get user ID from authenticated request (set by authUser middleware)
-        const userId = req.userId;
-        
-        // Extract fields from request body
-        const { name, password, address, dob, phone } = req.body;
-        const imageFile = req.file;
-        
-        // Validate user authentication
-        if (!userId) {
-            res.status(401).json({ 
-                success: false, 
-                message: "User not authenticated" 
-            });
-            return;
-        }
-        
-        // Validate required fields (excluding password as it's optional for updates)
-        if (!name || !address || !dob || !phone) {
-            res.status(400).json({ 
-                success: false, 
-                message: "Please fill all required fields (name, address, dob, phone)" 
-            });
-            return;
-        }
-        
-        // Check if user exists
-        const existingUser = await UserModel.findById(userId);
-        if (!existingUser) {
-            res.status(404).json({ 
-                success: false, 
-                message: "User not found" 
-            });
-            return;
-        }
-        
-        // Prepare update object with basic fields
-        const updateData: any = {
-            name,
-            address,
-            dob,
-            phone
-        };
-        
-        // Handle password update if provided
-        if (password) {
-            // Validate password strength
-            if (!validator.isStrongPassword(password, {
-                minLength: 8,
-                minLowercase: 1,
-                minUppercase: 1,
-                minNumbers: 1,
-                minSymbols: 1,
-            })) {
-                res.status(400).json({
-                    success: false,
-                    message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols",
-                });
-                return;
-            }
-            // Password will be automatically hashed by pre-save middleware
-            updateData.password = password;
-        }
-        
-        // Handle image upload if provided
-        if (imageFile) {
-            try {
-                // Create base64 string from file buffer
-                const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
-                
-                // Upload to Cloudinary
-                const result = await cloudinary.uploader.upload(fileStr, {
-                    folder: 'uploads',
-                    resource_type: 'auto',
-                });
-                
-                // Add image URL to update data
-                updateData.image = result.secure_url;
-            } catch (uploadError) {
-                console.error("Image upload error:", uploadError);
-                res.status(500).json({
-                    success: false,
-                    message: "Failed to upload image"
-                });
-                return;
-            }
-        }
-        
-        // Update user profile in a single operation
-        const updatedUser = await UserModel.findByIdAndUpdate(
-            userId, 
-            updateData,
-            { 
-                new: true,
-                runValidators: true 
-            }
-        ).select("-password"); 
-        
-        // Check if update was successful
-        if (!updatedUser) {
-            res.status(500).json({
-                success: false,
-                message: "Failed to update profile"
-            });
-            return;
-        }
-        
-        // Send success response
-        res.status(200).json({
-            success: true,
-            message: "Profile updated successfully",
-            user: updatedUser
-        });
-        
-    } catch (error) {
-        console.error("Update profile error:", error);
-        next(error);
+  try {
+
+    const userId = req.userId;
+
+    const { name, phone, address, dob, gender} = req.body;
+
+    const imageFile = req.file;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated"
+      });
+      return;
     }
+
+    const errors = validateProfileData({ name, phone, address, dob, gender }, false);
+    if (errors && errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors
+      });
+      return;
+    }
+
+    // Find existing user to verify they exist
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+      return;
+    }
+    // Prepare update data object
+    const updateData: any = {};
+
+    if (name !== undefined) updateData.name = name.trim();
+    if (phone !== undefined) updateData.phone = phone.trim();
+    if (address !== undefined) {
+      updateData.address = {
+        line1: address.line1?.trim() || "",
+        line2: address.line2?.trim() || ""
+      };
+    }
+    if (dob !== undefined) updateData.dob = new Date(dob);
+    if (gender !== undefined) updateData.gender = gender;
+
+    // Handle image upload with same logic as profile completion
+    if (imageFile) {
+      try {
+
+        const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
+
+        const result = await cloudinary.uploader.upload(fileStr, {
+          folder: 'user-profiles',
+          resource_type: 'auto',
+          transformation: [
+            { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+            { quality: 'auto:good' }
+          ]
+        });
+
+        updateData.image = result.secure_url;
+      } catch (uploadError) {
+        console.error("Image upload error:", uploadError);
+        res.status(500).json({
+          success: false,
+          message: "Failed to upload image"
+        });
+        return;
+      }
+    }
+
+    // Smart profile completion detection - check if profile should now be marked complete
+    const updatedUserTemp = { ...user.toObject(), ...updateData }; // Merge existing + new data
+
+    // Check if all required fields are now present
+    const isProfileComplete = ['phone', 'address.line1', 'gender', 'dob'].every(field => {
+      const value = field.split('.').reduce((obj, key) => obj?.[key], updatedUserTemp);
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    // If profile wasn't complete before but is complete now, mark it
+    if (isProfileComplete && !user.profileComplete) {
+      updateData.profileComplete = true;
+      updateData.profileCompletedAt = new Date();
+    }
+
+    // Update user document with only the changed fields
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      updateData,
+      {
+        new: true,
+        runValidators: true
+      }
+    ).select("-password");
+
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Update profile error:", error);
+    next(error);
+  }
 };
 
+
 const bookAppointment = async (req: any, res: Response, next: NextFunction): Promise<void> => {
-      // Start MongoDB session for transaction support (ensures data consistency)
+  // Start MongoDB session for transaction support (ensures data consistency)
   const session = await mongoose.startSession();
 
   try {
-     // Execute all database operations within a transaction
-    // If any operation fails, all changes are rolled back automatically
     await session.withTransaction(async () => {
       // Extract data from incoming HTTP request
-      const authenticatedUserId = req.userId;   // User ID from authentication middleware
-      const {docId, userId, slotDate, slotTime } = req.body; // Body of the request, can be used for additional data
+      const authenticatedUserId = req.userId;
+      const { docId, userId, slotDate, slotTime } = req.body;
 
-    //   // Verify that authenticated user is booking for themselves (prevent unauthorized bookings)
-    if(authenticatedUserId !== userId){
+      // Verify that authenticated user is booking for themselves (prevent unauthorized bookings)
+      if (authenticatedUserId !== userId) {
         res.status(403).json({
-            success: false,
-            message: "You can only book appointments for yourself"
-        })
-    }
-
-      // Check if all required fields are provided
-    if(!userId || !docId || !slotDate || !slotTime){
-        res.status(400).json({
-            success: false,
-            message: "All fields are required"
-        })
-    }
-
-     // Validate that user ID and doctor ID are valid MongoDB ObjectIds
-     if(!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(docId)){
-        res.status(400).json({
-            success: false,
-            message: "Invalid user or doctor ID"
-        });
-        return;                        
-     }
-
-     // Validate appointment date (must be today or future, within 3 months)
-     if(!isValidAppointmentDate(slotDate)){
-        res.status(400).json({
-            success: false,
-            message: "Invalid appointment date. Must be today or within 3 months."
+          success: false,
+          message: "You can only book appointments for yourself"
         });
         return;
-     }
+      }
 
-      // Validate time slot (must be within business hours and 30-minute intervals)
+      if (!userId || !docId || !slotDate || !slotTime) {
+        res.status(400).json({
+          success: false,
+          message: "All fields are required"
+        });
+        return;
+      }
+
+      // Validate that user ID and doctor ID are valid MongoDB ObjectIds
+      if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(docId)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid user or doctor ID"
+        });
+        return;
+      }
+
+      if (!isValidAppointmentDate(slotDate)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid appointment date. Must be today or within 3 months."
+        });
+        return;
+      }
+
       if (!isValidTimeSlot(slotTime)) {
         res.status(400).json({
           success: false,
           message: "Invalid time slot. Please select a valid time between 9:00 AM and 5:00 PM"
         });
-        return;                             
+        return;
       }
-     // Retrieve user document from database and include in transaction session  
-     const user  = await UserModel.findById(userId).session(session)
 
-     if(!user){
+      // Find user first
+      const user = await UserModel.findById(userId).session(session);
+
+      if (!user) {
         res.status(404).json({
-            success: false,
-            message: "User not found"
-        });
-        return; 
-     }
-
-    //   Retrieve doctor document from database and include in transaction session  
-    const doctor = await DoctorModel.findById(docId).session(session)
-
-    if(!doctor){
-        res.status(404).json({
-            success: false,
-            message: "Doctor not found"
+          success: false,
+          message: "User not found"
         });
         return;
-    }
+      }
 
-     // Check if doctor is currently accepting appointments
+      // ✅ CHECK IF USER PROFILE IS COMPLETE
+      const isProfileComplete = checkUserProfileCompletion(user);
+      
+      if (!isProfileComplete.isComplete) {
+        res.status(400).json({
+          success: false,
+          message: "Please complete your profile before booking an appointment",
+          missingFields: isProfileComplete.missingFields,
+          profileCompletionRequired: true
+        });
+        return;
+      }
+
+      const doctor = await DoctorModel.findById(docId).session(session);
+
+      if (!doctor) {
+        res.status(404).json({
+          success: false,
+          message: "Doctor not found"
+        });
+        return;
+      }
+
       if (!doctor.available) {
-        res.status(400).json({               
+        res.status(400).json({
           success: false,
           message: "Doctor is currently unavailable for appointments"
         });
-        return;                              
+        return;
       }
+
       // Get doctor's booked slots (object with dates as keys, time arrays as values)
       const doctorSlotsBooked = doctor.slots_booked || {};
       // Get already booked slots for the requested date (empty array if no bookings)
       const bookedSlotsForDate = doctorSlotsBooked[slotDate] || [];
-      
+
       // Check if requested time slot is already booked
       if (bookedSlotsForDate.includes(slotTime)) {
         res.status(409).json({              
@@ -382,55 +497,54 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         });
         return;                              
       }
-    
-      // Check for existing appointment with same parameters (prevent duplicate bookings)
-     // Check for existing appointment with same parameters (prevent duplicate bookings)
+
       const existingAppointment = await AppointmentModel.findOne({
-        userId,                             
-        docId,                              
-        slotDate,                           
-        slotTime,                           
-        cancelled: false                   
-      }).session(session);                  
-      
-   
+        userId,
+        docId,
+        slotDate,
+        slotTime,
+        cancelled: false
+      }).session(session);
+
       if (existingAppointment) {
-        res.status(409).json({               
+        res.status(409).json({
           success: false,
           message: "You already have an appointment with this doctor at this time"
         });
-        return;                              
+        return;
       }
+
       // Prepare appointment data object with all required information
-
       const appointmentData = {
-        userId,                              
-        docId,                               
-        slotDate,                            
-        slotTime,                            
-        userData: {                          
-          name: user.name,                    
-          email: user.email,                   
-          phone: user.phone,                   
-          address: user.address                
+        userId: new mongoose.Types.ObjectId(userId),
+        docId: new mongoose.Types.ObjectId(docId),
+        slotDate,
+        slotTime,
+        amount: doctor.fees, 
+        userData: {
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          address: user.address,
+          dateOfBirth: user.dob,
+          image: user.image,
+          gender: user.gender
         },
-        docData: {                        
-          name: doctor.name,           
-          specialty: doctor.specialty,    
-          degree: doctor.degree,          
-          fees: doctor.fees               
+        docData: {
+          name: doctor.name,
+          specialty: doctor.specialty,
+          degree: doctor.degree,
+          fees: doctor.fees,
+          image: doctor.image,
+          address: doctor.address,
         },
-        amount: doctor.fees,                   
-        date: Date.now(),                     
-        cancelled: false,                     
-        payment: false,                       
-        isCompleted: false                    
-      }
+        date: Date.now(),
+        cancelled: false,
+        payment: false,
+        isCompleted: false
+      };
 
-
-      // Create new appointment document with prepared data
       const newAppointment = new AppointmentModel(appointmentData);
-      // Save appointment to database within transaction
       await newAppointment.save({ session });
 
       // Create copy of doctor's existing booked slots to avoid mutation
@@ -441,93 +555,92 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
       }
       // Add the newly booked time slot to the date's array
       updatedBookedSlots[slotDate].push(slotTime);
-      
-      // Update doctor document with new booked slots within transaction
+
       await DoctorModel.findByIdAndUpdate(
-        docId,                               // Find doctor by ID
-        { slots_booked: updatedBookedSlots }, // Update slots_booked field
-        { session }                          // Include in transaction
+        docId,
+        { slots_booked: updatedBookedSlots },
+        { session }
       );
-       // Send successful response with appointment details
-      res.status(201).json({                 // 201 Created status for successful creation
+
+      // Send successful response with appointment details
+      res.status(201).json({
         success: true,
         message: "Appointment booked successfully",
-        appointment: {                       
-          appointmentId: newAppointment._id, 
-          doctorName: doctor.name,           
-          speciality: doctor.specialty,     
-          slotDate,                          
-          slotTime,                          
-          fees: doctor.fees,                 
-          status: "confirmed"                
+        appointment: {
+          appointmentId: newAppointment._id,
+          doctorName: doctor.name,
+          image: doctor.image,
+          address: doctor.address,
+          speciality: doctor.specialty,
+          slotDate,
+          slotTime,
+          fees: doctor.fees,
+          status: "confirmed"
         }
       });
-    }) 
+    });
   } catch (error: any) {
-    // Log error details for debugging purposes
     console.error("Book appointment error:", error);
-    
-    // Handle specific MongoDB validation errors
+
     if (error.name === 'ValidationError') {
-      res.status(400).json({                 
+      res.status(400).json({
         success: false,
         message: "Validation error: Please check your input data"
       });
       return;
     }
-    
-    // Handle MongoDB ObjectId casting errors
+
     if (error.name === 'CastError') {
-      res.status(400).json({                 
+      res.status(400).json({
         success: false,
         message: "Invalid ID format"
       });
       return;
     }
-    
+
     next(error);
   } finally {
     await session.endSession();
   }
-}
+};
 
-
-const listAppointment= async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
+const listAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { userId } = req.body;
-     // Validate that user ID and doctor ID are valid MongoDB ObjectIds
-     if(!mongoose.Types.ObjectId.isValid(userId)){
-        res.status(400).json({
-            success: false,
-            message: "Invalid user ID"
-        });
-        return;                         // Reject invalid dates
-     }
-     const userAppointment = await appointmentModel.find({ userId });
-     res.status(200).json({
+    const userId = req.userId; // This should be set by auth middleware
+    
+    if (!userId) {
+       res.status(400).json({ success: false, message: 'User ID not found' });
+       return
+    }
+
+    const appointments = await AppointmentModel
+          .find({ 
+              userId, 
+              cancelled: false 
+            });
+    
+    res.json({
       success: true,
-      message: "Appointment details successfully retrieved",
-      userAppointment
-     })
+      message: "Appointments retrieved successfully",
+      userAppointment: appointments
+    });
   } catch (error) {
-    next(error)
+    console.error('List appointments error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
-}
+};
 
 
-// Cancel an existing appointment
 const cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const session = await mongoose.startSession();
   
   try {
-    await session.startTransaction(); // Use startTransaction instead of withTransaction
-    
-    // Get authenticated user ID from middleware
+    await session.startTransaction(); 
+
     const userId = req.userId;
-    // Get appointment ID from request body
+
     const { appointmentId } = req.body;
     
-    // Validate appointmentId
     if (!appointmentId) {
       res.status(400).json({
         success: false,
@@ -544,7 +657,7 @@ const cancelAppointment = async (req: Request, res: Response, next: NextFunction
       return;
     }
     
-    // Find appointment that belongs to user and is not already cancelled
+  
     const appointment = await AppointmentModel.findOne({
       _id: appointmentId,
       userId,
@@ -561,7 +674,6 @@ const cancelAppointment = async (req: Request, res: Response, next: NextFunction
       return;
     }
     
-    // MARK 1: Update appointment with comprehensive cancellation data
     await AppointmentModel.findByIdAndUpdate(
       appointmentId,
       { 
@@ -594,10 +706,8 @@ const cancelAppointment = async (req: Request, res: Response, next: NextFunction
       );
     }
     
-    // MARK 3: Commit transaction BEFORE sending response
     await session.commitTransaction();
     
-    // Send successful cancellation response
     res.status(200).json({
       success: true,
       message: "Appointment cancelled successfully",
@@ -612,7 +722,7 @@ const cancelAppointment = async (req: Request, res: Response, next: NextFunction
     });
     
   } catch (error: any) {
-    // MARK 4: Always abort transaction on error
+    
     await session.abortTransaction();
     
     console.error("Cancel appointment error:", error);
@@ -632,7 +742,6 @@ const cancelAppointment = async (req: Request, res: Response, next: NextFunction
     });
     
   } finally {
-    // MARK 5: Always end the session
     await session.endSession();
   }
 };
@@ -641,55 +750,164 @@ const cancelAppointment = async (req: Request, res: Response, next: NextFunction
 // / Get available slots for a doctor on a specific date
 const getAvailableSlots = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Extract doctor ID and date from URL parameters
     const { docId, date } = req.params;
-    
-    // Validate doctor ID format
+
     if (!mongoose.Types.ObjectId.isValid(docId)) {
       res.status(400).json({
         success: false,
         message: "Invalid doctor ID"
       });
-      return;                                // Stop if doctor ID is malformed
+      return;
     }
-    
+
     // Find doctor in database
     const doctor = await DoctorModel.findById(docId);
-    if (!doctor) {                           // Check if doctor exists
+    if (!doctor) {
       res.status(404).json({
         success: false,
         message: "Doctor not found"
       });
-      return;                                // Cannot get slots for non-existent doctor
+      return;
     }
-    
     // Generate all possible time slots for the day
     const allSlots = generateTimeSlots();
     // Get booked slots for the requested date (empty array if none)
-    const bookedSlots = doctor.slots_booked[date] || [];
+    const bookedSlots = (doctor.slots_booked ?? {})[date] || [];
     // Filter out booked slots to get available slots
     const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
-    
+
     // Return availability information
-    res.status(200).json({                   // 200 OK status
+    res.status(200).json({
       success: true,
-      availableSlots,                        // Array of available time slots
-      totalSlots: allSlots.length,          // Total number of possible slots
-      bookedSlots: bookedSlots.length       // Number of already booked slots
+      availableSlots,
+      totalSlots: allSlots.length,
+      bookedSlots: bookedSlots.length
     });
-    
+
   } catch (error) {
-    // Pass any errors to Express error middleware
+    console.error("Get available slots error:", error);
     next(error);
   }
 };
 
+
+const completeProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.userId
+    const { name, phone, address, dob, gender, password } = req.body
+    const imageFile = req.file
+
+    // Check if user is authenticated
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated"
+      })
+      return
+    }
+
+    // Validate profile data
+    const errors = validateProfileData({ name, phone, address, dob, gender, password }, true);
+    if (errors && errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors
+      })
+      return
+    }
+
+    // Look for the user
+    const user = await UserModel.findById(userId)
+
+    if (!user) {
+      res.status(404).json({
+        sucess: false,
+        message: "User does not exist."
+      })
+    }
+
+    if (user?.profileComplete) {
+      res.status(400).json({
+        success: false,
+        message: "Profile is already complete. Kindly update profile"
+      })
+      return
+    }
+
+    // Prepare update data
+    const profileDataUpdate: IProfileUpdateData = {
+      name: name.trim(),
+      phone: phone.trim(),
+      address: {
+        line1: address.line1.trim() || "",
+        line2: address.line2.trim() || ""
+      },
+      dob: new Date(dob),
+      profileComplete: true,
+      profileCompletedAt: new Date()
+    }
+
+    if (gender) profileDataUpdate.gender = gender;
+    if (password) profileDataUpdate.password = password;
+
+    // Handle Image Upload to cloudinary
+    if (imageFile) {
+      try {
+        const storedImage = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
+
+
+        const result = await cloudinary.uploader.upload(storedImage, {
+          folder: "user-profile",
+          resource_type: "auto",
+          transformation: [
+            { width: 500, height: 500, crop: "fill", gravity: "face" },
+            { quality: "auto-good" }
+          ]
+        })
+
+        profileDataUpdate.image = result.secure_url
+      } catch (uploadError) {
+        console.error("Image upload error:", uploadError);
+        res.status(500).json({
+          success: false,
+          message: "Failed to upload image"
+        });
+        return;
+      }
+    }
+
+    const completedProfile = await UserModel.findByIdAndUpdate(
+      userId,
+      profileDataUpdate,
+      {
+        new: true,
+        runValidators: true
+      }
+    ).select("-password");
+
+    res.status(200).json({
+      success: true,
+      message: "Profile completed successfully. Please proceed to booking of appointment",
+      user: completedProfile
+    })
+  } catch (error) {
+    console.error("Complete profile error:", error);
+    next(error);
+  }
+}
+
+const getProfileStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => { }
+
 export {
-    registerUser,
-    loginUser,
-    getProfile,
-    updateProfile,
-    bookAppointment,
-    listAppointment,
-    cancelAppointment,
+  registerUser,
+  loginUser,
+  getProfile,
+  updateProfile,
+  bookAppointment,
+  listAppointment,
+  cancelAppointment,
+  completeProfile,
+  getProfileStatus,
+  verifyUserOTP
 }

@@ -27,19 +27,9 @@ const Navbar = () => {
   const handleLogout = () => {
     logout()
     setToken("")
-  }  
-  
-  useEffect(()=> {
-    const handleClickOutside = (e:MouseEvent) => {
-      if(dropDownMenuRef.current && !dropDownMenuRef.current.contains(e.target as Node)){
-        setShowMenu(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-  }, [])
-
-    return (
-      <nav className="flex flex-wrap items-center justify-between text-sm py-4 mb-5 border-b border-b-[#ADADAD]">
+  }
+  return (
+    <nav className=" flex items-center justify-between text-sm py-4 mb-5 border-b border-b-[#ADADAD]">
       {/* logo */}
       <img
         onClick={() => navigate({ to: "/" })}
@@ -48,38 +38,42 @@ const Navbar = () => {
         alt="Logo"
       />
 
-      <ul className="md:flex items-start gap-5 font-medium hidden">
-        {navItems.map((nav, index: number) => (
+      {/* <div> */}
+        <ul className='!md:flex !items-start !gap-5 !font-medium'>
+         {navItems.map((nav, index:number)=>(
           <Link
             key={index}
             to={nav.path}
-            className="[&.active]:text-[#0b59c5] group relative"
+            className="[&.active]:text-[#1F2937]"
           >
-            <li className="py-1">{nav.label}</li>
-            <span
-              className={`absolute left-0 bottom-0 h-[2px] w-full bg-blue-600 transition-transform duration-300 
-          ${isActiveLink(nav.path) ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
+            <li className='py-1'> {nav.label}</li>
+            <hr 
+              className={`border-none outline-none bg-blue-600 w-full m-auto transition-opacity ${
+                isActiveLink(nav.path) ? 'opacity-100' : 'opacity-0'
+              }`} 
             />
           </Link>
         ))}
       </ul>
 
-      <div className="flex items-center gap-4 ">
-        {token && user ? (
-          <div className="flex items-center gap-2 group relative">
-            {isLoading ? (
-              <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse " />
-            ) : (
-              <img
-                src={
-                  user?.image ||
-                    
-                  "https://res.cloudinary.com/delaquarsh/image/upload/v1718717616/w1wushxqt2aorazppexq.jpg"
-                }
-                className="w-8 rounded-full"
-                alt="User Image"
-              />
-            )}
+      <div className='flex items-center gap-4 '>
+        {/* if account exist, token is stored and with token user should see something different */}
+         {token && userData ? 
+          ( 
+            <div className='flex items-center gap-2 cursor-pointer group relative '>
+              { isLoading  ? 
+              (
+                <div className='w-8 h-8 rounded-full bg-gray-200 animate-pulse '/>
+              ) :
+              (
+                <img 
+                  src={userData?.image }
+                  className='w-8 rounded-full'
+                  alt='User Image'
+                />
+              )
+            }
+            <img  className='w-2.5' alt='Dropdown' src={assets.dropdown_icon}  />
 
             {/* Dropdown toggle (image as button) */}
             <div className="relative" 

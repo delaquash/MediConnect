@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { profile } from "console";
 import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface IDoctor extends Document {
@@ -6,57 +7,199 @@ export interface IDoctor extends Document {
   email: string;
   password: string;
   image?: string;
-  specialty: string;
-  degree: string;
-  experience: string;
-  about: string;
-  available: boolean;
-  fees: number;
-  address: {
-    [key: string]: any;
+  specialty?: string;
+  degree?: string;
+  experience?: string;
+  about?: string;
+  available?: boolean;
+  fees?: number;
+   address: {
+    line1: string;
+    line2: string;
+    city: string,
+    state: string,
+    zip: string,
   };
   date: Date;
-  slots_booked: {
+  slots_booked?: {
     [key: string]: any;
   };
+
+  profileComplete?: boolean;
+  profileCompletedAt?: Date | null;
+  isActive?: boolean;
+  emailVerificationOTP?: string | null;      
+  emailVerificationOTPAttempts?: number;        
+  passwordResetToken?: string | null;
+  passwordResetExpires?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  lastLogin?: Date | null;
+  isEmailVerified?: boolean;           
+  emailVerificationToken?: string;       
+  emailVerificationOTPExpires?: Date;  
+
+  checkProfileCompletion(): boolean;
+  comparePassword(candidatePassword: string): Promise<boolean>
 }
 
 const doctorSchema = new Schema<IDoctor>(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    name: { 
+      type: String, 
+      required: true,
+      minlength: [2, "Name must be at least 2 characters long"],
+      maxlength: [50, "Name must be less than 50 characters"]  
+    },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    trim: true,
+    isLowercase: true,
+    lowercase: true,
+    validate: {
+      validator: function(email: string) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      },
+      message: "Please provide a valid email address"
+    }
+  },
+    password: { 
+    type: String, 
+    required: [true, "Password is required." ],
+    minlength: [8, "Password must be at least 8 characters long"]
+  },
     image: { type: String  },
-    specialty: { type: String, required: true },
-    degree: { type: String, required: true },
-    experience: { type: String, required: true },
-    about: { type: String, required: true },
+    specialty: { type: String },
+    degree: { type: String},
+    experience: { type: String },
+    about: { type: String},
     available: { type: Boolean, default: true },
-    fees: { type: Number, required: true },
-    address: { type: Object, required: true },
+    fees: { type: Number },
+    address: { 
+        line1: {
+        type: String,
+        default: "",
+        maxlength: [100, 'Address line 1 must be less than 100 characters']
+      },
+      line2: {
+        type: String,
+        default: "",
+        maxlength: [100, 'Address line 2 must be less than 100 characters']
+      },
+      city: {
+        type: String,
+        default: "",
+        maxlength: [50, 'City must be less than 50 characters']
+      },
+      state: {
+        type: String,
+        default: "",
+        maxlength: [50, 'State must be less than 50 characters']
+      },
+      zip: {
+        type: String,
+        default: "",
+        maxlength: [20, 'Zip code must be less than 20 characters']
+      },
+  },
     date: {type: Date, default: Date.now },
-    // slots_booked will hold the booked slots for each day
+
     slots_booked: { type: Object, default: {} },
+    emailVerificationOTP: { 
+    type: String, 
+    default: null 
+  },
+    emailVerificationOTPExpires: { 
+      type: Date, 
+      default: null 
+    },
+    emailVerificationOTPAttempts: { 
+      type: Number, 
+      default: 0 
+    },
+  profileComplete: {
+    type: Boolean,
+    default: false
+  },
+  
+  profileCompletedAt: {
+    type: Date,
+    default: null
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  
+  emailVerificationToken: {
+    type: String,
+    default: null
+  },
+  
+
+  passwordResetToken: {
+    type: String,
+    default: null
+  },
+  
+  passwordResetExpires: {
+    type: Date,
+    default: null
+  },
+  
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  
+  lastLogin: {
+    type: Date,
+    default: null
+  }
   },
   { minimize: false, // Prevents mongoose from removing empty objects
     timestamps: true   // Automatically adds createdAt and updatedAt fields
   }, 
 );
 
+
+doctorSchema.index({ createdAt: -1})
+doctorSchema.index({ profileComplete: -1 })
+
 doctorSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next(); // skip if password isn't modified
+  if (!this.isModified("password")) return next(); 
 
   try {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt); // hash the password
+    this.password = await bcrypt.hash(this.password, salt); 
     next();
   } catch (error) {
     next(error as Error);
   }
 });
-
+// method to check if profile is complete
+doctorSchema.methods.checkProfileCompletion = function (){
+  const requiredFields = [ "specialty", "degree", "experience", "about", "fees", "address"];
+  const isComplete = requiredFields.every(field => {
+    const value = field.split(".").reduce((obj, key) => obj && obj[key], this as any);
+    return value !== undefined && value !== null && value !== "";
+  })
+  if(isComplete && !this.profileComplete) {
+    this.profileComplete = true;
+    this.profileCompletedAt = new Date();
+  }
+  return isComplete;
+}
 // to compare password
-// Compare the password
+
 doctorSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean>{
   return await bcrypt.compare(candidatePassword, this.password);
   }

@@ -1,32 +1,56 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config();
 import express, { Request, Response } from 'express';
 import cors from "cors";
-import connectDB from "./config/database";
-import connectCloudinary from "./config/cloudinary";
+import { connectDB } from "./config/database";
+import cloudinary from "./config/cloudinary";
 import adminRouter from "./routes/adminRouter";
 import doctorRouter from "./routes/doctorRoutes";
 import userRouter from "./routes/userRoutes";
+import passwordRouter from "./routes/PasswordResetRoutes";
+import EmailService from "./services/emailService";
 
-// app config
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Connect to services
-connectDB();
-connectCloudinary();
-
-//  Middlewares (CORS first, then body parsers)
 app.use(cors()); 
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
 
-//  API endpoints
 app.use("/admin", adminRouter);
 app.use("/doctor", doctorRouter);
 app.use("/user", userRouter); 
+app.use("/password", passwordRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("API WORKING");
 });
 
-app.listen(port, () => console.log("Server started", port));
+async function startServer() {
+  try {
+  
+    await connectDB();
+    console.log("Database connected");
+
+    // Test Cloudinary configuratio
+
+    // Initialize email service (with error handling)
+    try {
+      await EmailService.initialize();
+
+    } catch (emailError:any) {
+      console.warn("⚠️ Email service failed to initialize:", emailError.message);
+      console.log("Server will continue without email functionality");
+    }
+    
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+    });
+
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

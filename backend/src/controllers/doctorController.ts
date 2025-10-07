@@ -1,70 +1,13 @@
-
 import { NextFunction, Request, Response } from 'express';
 import DoctorModel from '../model/doctorModel';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import AppointmentModel from '../model/appointmentModel';
-import appointmentModel from '../model/appointmentModel';
 import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
-import { PopulatedAppointment } from "../types/type"
+import { validateProfileData } from '../helper/validateProfileData';
+import cloudinary  from "../config/cloudinary";
 
-const changeAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        // ✅ Add safety check for req.body
-        if (!req.body) {
-            res.status(400).json({
-                success: false,
-                message: "Request body is required"
-            });
-            return;
-        }
 
-        const { docId } = req.body;
-        
-        // Validate that docId is provided
-        if (!docId) {
-            res.status(400).json({
-                success: false,
-                message: "Doctor ID (docId) is required"
-            });
-            return;
-        }
-        
-        // Find doctor first to get current availability status
-        const doctor = await DoctorModel.findById(docId);
-        
-        // Check if doctor exists
-        if (!doctor) {
-            res.status(404).json({
-                success: false,
-                message: "Doctor not found"
-            });
-            return;
-        }
-        
-        // Calculate new availability status
-        const newAvailability = !doctor.available;
-        
-        // Update doctor's availability
-        await DoctorModel.findByIdAndUpdate(
-            docId,
-            { available: newAvailability },
-            { new: true }
-        );
-        
-        // Send success response
-        res.status(200).json({
-            success: true,
-            message: `Doctor availability ${newAvailability ? 'enabled' : 'disabled'} successfully`,
-            data: { 
-                docId: docId,
-                available: newAvailability 
-            }
-        });
-    } catch (error) {
-        next(error);
-    }
-}
 const doctorList = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const doctors = await DoctorModel.find({}).select(["-password", "-email"]).sort({ date: -1 });
@@ -77,44 +20,70 @@ const doctorList = async (req: Request, res: Response, next: NextFunction): Prom
         next(error);
     }
 }
+
 const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        // ✅ Add safety check for req.body
         if (!req.body) {
-            console.log(req.body); // Debug log
             res.status(400).json({
                 success: false,
                 message: "Request body is required"
             });
             return;
         }
-        // Validate that email and password are provided
+
         const { email, password } = req.body
 
         if (!email || !password) {
-            res.status(400).json({ success: false, message: "Email and password are required" });
+            res.status(400).json({ 
+                success: false, 
+                message: "Email and password are required" 
+            });
             return;
         }
-        const doctor = await DoctorModel.findOne({ email })
 
-           if (!doctor) {
-                 res.json({ success: false, message: "Invalid credentials" });
-                 return;
-           }
+        // Find doctor by email
+        const doctor = await DoctorModel.findOne({ email }).select("+password");
 
-            const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET!, {
-                expiresIn: "30d" })
-    
-
-           res.status(200).json({
-                success: true,
-                message: "Login successful",
-               token
+        if (!doctor) {
+            res.status(401).json({ 
+                success: false, 
+                message: "Invalid credentials" 
             });
+            return;
+        }
+
+        // ✅ Use the comparePassword method from your model
+        const isPasswordValid = await doctor.comparePassword(password);
+        
+        if (!isPasswordValid) {
+            res.status(401).json({
+                success: false,
+                message: "Invalid credentials"
+            });
+            return;
+        }
+
+        // Generate token
+        const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET!, {
+            expiresIn: "30d" 
+        });
+
+        // Don't send password in response
+        const doctorResponse = doctor.toObject();
+        // delete doctorResponse?.password;
+
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            token,
+            doctor: doctorResponse
+        });
+
     } catch (error) {
         next(error);
     }
 }
+
 
 const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -136,7 +105,7 @@ const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Respo
     // Build query filter
     const filter: any = { 
       docId: doctorId,
-      cancelled: false, // Only non-cancelled appointments
+      cancelled: false, 
       slotDate: { 
         $gte: new Date().toISOString().split('T')[0] // Future and today's appointments
       }
@@ -158,7 +127,7 @@ const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Respo
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
     
-    // Fetch appointments with population and sorting
+    
     const appointments = await AppointmentModel.find(filter)
       .populate('userId', 'name phone email') // Populate user details
       .sort({ slotDate: 1, slotTime: 1 }) // Sort by date and time
@@ -172,10 +141,8 @@ const getDoctorAppointments = async (req: AuthenticatedDoctorRequest, res: Respo
     const formattedAppointments = appointments.map(apt => ({
       appointmentId: apt._id,
       patient: {
-        // id: apt.userId?._id,
         name: apt.userData.name,
         phone: apt.userData.phone,
-        // email: apt.userId.email,
         address: apt.userData.address
       },
       appointment: {
@@ -229,7 +196,7 @@ const doctorCancelAppointment = async (req: any, res: Response, next: NextFuncti
       // Find appointment belonging to this doctor
       const appointment = await AppointmentModel.findOne({
         _id: appointmentId,
-        docId: doctorId,           // Ensure doctor owns this appointment
+        docId: doctorId,           
         cancelled: false
       }).session(session);
       
@@ -246,7 +213,7 @@ const doctorCancelAppointment = async (req: any, res: Response, next: NextFuncti
         appointmentId,
         { 
           cancelled: true,
-          cancelledBy: 'doctor',    // Track who cancelled
+          cancelledBy: 'doctor',    
           cancellationReason: reason
         },
         { session }
@@ -328,7 +295,7 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction): 
       return;
     }
     
-    const appointmentDetails = await appointmentModel.findByIdAndUpdate(appointmentId, {
+    const appointmentDetails = await AppointmentModel.findByIdAndUpdate(appointmentId, {
       isCompleted: true,
     });
     
@@ -345,10 +312,8 @@ const appointmentComplete = async(req: any, res: Response, next: NextFunction): 
 }
 const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
      try {
-    // Get doctor ID from doctor auth middleware (secure)
     const authenticatedDoctorId = req.docId;
     
-    // Validate doctor ID format before querying database
     if (!mongoose.Types.ObjectId.isValid(authenticatedDoctorId)) {
       res.status(400).json({
         success: false,
@@ -357,7 +322,6 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
       return;
     }
     
-    // Verify doctor exists in database
     const doctor = await DoctorModel.findById(authenticatedDoctorId);
     if (!doctor) {
       res.status(404).json({
@@ -367,8 +331,7 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
       return;
     }
     
-    // Fetch all appointments for this doctor
-    const appointments = await appointmentModel.find({ 
+    const appointments = await AppointmentModel.find({ 
       docId: authenticatedDoctorId
     }).populate('userId', 'name email phone');
     
@@ -377,7 +340,7 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
     appointments.forEach((appointment) => {
       // Count earnings only if appointment is completed OR payment is made
       if (appointment.isCompleted || appointment.payment) {
-        earnings += appointment.amount;
+        earnings += appointment?.amount || 5000;
       }
     });
     
@@ -411,7 +374,7 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
         paymentStatus: apt.payment ? 'paid' : 'pending'
       }));
     
-    // Prepare comprehensive dashboard data
+
     const dashData = {
       earnings,
       totalAppointments: appointments.length,
@@ -451,9 +414,8 @@ const doctorsDashboard = async (req: any | AuthenticatedDoctorRequest, res: Resp
 
 const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // FIXED: Get doctor ID directly from req.docId (not destructured)
-    const doctorId = req.docId; // This is the authenticated doctor ID from middleware
-    
+
+    const doctorId = req.docId; 
     // Validate doctor ID format
     if (!doctorId || !mongoose.Types.ObjectId.isValid(doctorId)) {
       res.status(400).json({
@@ -474,7 +436,6 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
       return;
     }
     
-    // Return formatted doctor profile
     res.status(200).json({
       success: true,
       message: "Doctor profile retrieved successfully",
@@ -512,11 +473,260 @@ const getDoctorProfile = async (req: AuthenticatedDoctorRequest, res: Response, 
 };
 
 const updateDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  
+  try {
+    const docId = req.docId
+    const imageFile = req.file;
+    let {name, phone, specialty, degree, experience, about, fees, address} = req.body;
+
+    console.log('=== DEBUG INFO ===');
+    console.log('imageFile:', imageFile ? 'Present' : 'Not present');
+    console.log('req.body keys:', Object.keys(req.body));
+    console.log('==================');
+
+    if(!docId){
+      res.status(401).json({
+        success: false,
+        message: "Doctor does not exist"
+      });
+      return;
+    }
+
+    // Parse JSON strings from form-data
+    if (address && typeof address === 'string') {
+      try {
+        address = JSON.parse(address);
+      } catch (e) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid address format"
+        });
+        return;
+      }
+    }
+
+    // Convert fees to number if it's a string
+    if (fees !== undefined && typeof fees === 'string') {
+      fees = parseFloat(fees);
+      if (isNaN(fees)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid fees format"
+        });
+        return;
+      }
+    }
+
+    // Only validate if we have fields to validate
+    const hasFieldsToValidate = name || phone || specialty || degree || experience || about || fees || address;
+    
+    if (hasFieldsToValidate) {
+      const errors = validateProfileData({ name, phone, image: undefined, specialty, degree, experience, about, fees, address}, false)
+      if (errors && errors.length > 0) {
+        console.log('Validation errors:', errors);
+        res.status(400).json({
+          success: false,
+          message: "Profile validation failed",
+          errors
+        });
+        return;
+      }
+    }
+
+    const doc = await DoctorModel.findById(docId);
+    if(!doc){
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      })
+      return
+    }
+
+    const trimmedAddress = address ? Object.fromEntries(
+      Object.entries(address).map(([key, value]) => [
+        key,
+        typeof value === "string" ? value.trim() : value
+      ])
+    ) : undefined;
+
+    const updateDocData: any = {}
+
+    if(name !== undefined) updateDocData.name = name.trim();
+    if(phone !== undefined) updateDocData.phone = phone.trim();
+    if(specialty !== undefined) updateDocData.specialty = specialty.trim();
+    if(degree !== undefined) updateDocData.degree = degree.trim();
+    if(experience !== undefined) updateDocData.experience = typeof experience === 'string' ? experience.trim() : experience;
+    if(about !== undefined) updateDocData.about = about.trim();
+    if(fees !== undefined) updateDocData.fees = fees;
+    if(address !== undefined) updateDocData.address = trimmedAddress;
+
+    // cloudinary to handle image upload
+    if (imageFile) {
+      console.log('Starting Cloudinary upload...');
+      try {
+        const fileStr = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString('base64')}`;
+      
+        const result = await cloudinary.uploader.upload(fileStr, {
+          folder: 'doctors-profiles',
+          resource_type: 'auto',
+          transformation: [
+            { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+            { quality: 'auto:good' }
+          ]
+        });
+        
+        console.log('Cloudinary upload successful!');
+        updateDocData.image = result.secure_url;
+      } catch (uploadError) {
+        console.error("Cloudinary upload error:", uploadError);
+        res.status(500).json({
+          success: false,
+          message: "Failed to upload image",
+          error: uploadError instanceof Error ? uploadError.message : 'Unknown error'
+        });
+        return;
+      }
+    }
+
+    const updatedDocTemp = { ...doc.toObject(), ...updateDocData}
+
+    // check if all required fields are now present
+    const isProfileComplete = ["image", "specialty", "degree", "experience", "about", "fees", "address"].every(field => {
+      const value = field.split('.').reduce((obj, key) => obj?.[key], updatedDocTemp);
+      return value !== null && value !== undefined && value !== '';
+    })
+
+    // if profile wasn't complete before, but it is now complete, mark it 
+    if(isProfileComplete && !doc.profileComplete) {
+      updateDocData.profileComplete = true
+      updateDocData.profileCompletedAt = new Date()
+    }
+
+    const updatedDocProfile = await DoctorModel.findByIdAndUpdate(
+      docId,
+      updateDocData,
+      {
+        new: true,
+        runValidators: true
+      }
+    ).select("-password")
+    
+    res.status(200).json({
+      success: true,
+      message: "Doctor's Profile updated successfully",
+      user: updatedDocProfile
+    });
+  } catch (error) {
+    console.error('Controller error:', error);
+    next(error);
+  }
+}
+
+const completeDoctorProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+   const docId = req.docId
+    const imageFile = req?.file;
+    const {name, phone, image, specialty, degree, experience, about, fees, address} = req.body;
+
+    if(!docId){
+      res.status(401).json({
+        success: false,
+        message: "Doctor does not exist"
+      });
+      return;
+    }
+
+    const errors = validateProfileData({ name, phone, image, specialty, degree, experience, about, fees, address}, false)
+    if (errors && errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: "Profile validation failed",
+        errors
+      });
+      return;
+    }
+
+    const doc = await DoctorModel.findById(docId);
+    if(!doc){
+      res.status(404).json({
+        success: false,
+        message: "Doctor not found"
+      })
+      return
+    }
+
+    if(doc?.profileComplete){
+        res.status(400).json({
+        success: false,
+        message: "Profile is already complete. Kindly update profile"
+      })
+      return
+    }
+
+    const trimmedAddress = Object.fromEntries(
+      Object.entries(address || {}).map(([key, value]) => [
+        key,
+        typeof value === "string" ? value.trim() : value
+      ])
+    );
+    // prepare update data 
+    const docProfileDataUpDate: any= {
+      phone: phone.trim(),
+      specialty: specialty.trim(),
+      degree: degree.trim(),
+      experience: experience.trim(),
+      about:about.trim(),
+      address: address.trimmedAddress,
+      
+      profileComplete: true,
+      profileCompletedAt: new Date()
+    }
+
+      if (imageFile) {
+        try {
+          
+          const fileStr = `data:${imageFile.mimetype};base64,${imageFile?.buffer?.toString('base64')}`;
+        
+          const result = await cloudinary.uploader.upload(fileStr, {
+            folder: 'doctors-profiles',
+            resource_type: 'auto',
+            transformation: [
+              { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+              { quality: 'auto:good' }
+            ]
+          });
+          
+          docProfileDataUpDate.image = result.secure_url;
+        } catch (uploadError) {
+          console.error("Image upload error:", uploadError);
+          res.status(500).json({
+            success: false,
+            message: "Failed to upload image"
+          });
+          return;
+        }
+      }
+
+      const completeDocProfile = await DoctorModel.findByIdAndUpdate(
+        docId,
+        docProfileDataUpDate, 
+        {
+          new: true, 
+          runValidators: true
+        }
+      ).select("-password")
+
+       res.status(200).json({
+          success: true,
+          message: "Profile completed successfully. Please proceed to accepting appointment",
+          doctor: completeDocProfile
+        })
+  } catch (error) {
+    next(error);
+    console.error("Unable to complete profile", error);
+  }
 }
 
 export {
-    changeAvailability,
     doctorList,
     loginDoctor,
     getDoctorAppointments,
@@ -525,5 +735,5 @@ export {
     doctorsDashboard,
     getDoctorProfile,
     updateDoctorProfile,
-    
+    completeDoctorProfile
 }

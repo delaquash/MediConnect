@@ -1,4 +1,6 @@
-const validateProfileData = (data: any, isRequired = false) => {
+import validator from "validator";
+
+export const validateProfileData = (data: any, isRequired = false) => {
   const errors: string[] = [];
 
   // Name validation - check if provided or required
@@ -8,7 +10,7 @@ const validateProfileData = (data: any, isRequired = false) => {
     } else if (data.name.trim().length > 50) {
       errors.push("Name must be less than 50 characters");
     }
-  } else if (isRequired) { // Only required for profile completion
+  } else if (isRequired) { 
     errors.push("Name is required");
   }
 
@@ -39,12 +41,12 @@ const validateProfileData = (data: any, isRequired = false) => {
       const now = new Date();
       const age = now.getFullYear() - birthDate.getFullYear();
       
-      // Age must be between 13-120 years for healthcare platform
-      if (isNaN(birthDate.getTime()) || age < 13 || age > 120) {
+      // Age must be between 13-70 years for healthcare platform
+      if (isNaN(birthDate.getTime()) || age < 13 || age > 70) {
         errors.push("Please provide a valid date of birth (age between 13-120 years)");
       }
     }
-  } else if (isRequired) { // Required for profile completion
+  } else if (isRequired) { 
     errors.push("Date of birth is required");
   }
   

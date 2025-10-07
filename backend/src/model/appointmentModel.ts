@@ -8,7 +8,7 @@ export interface IAppointment extends Document {
   slotTime: string;
   userData: Record<string, any>;
   docData: Record<string, any>;
-  amount: number;
+  amount?: number;
   date: number;
   payment: boolean;
   isCompleted: boolean;
@@ -20,14 +20,15 @@ export interface IAppointment extends Document {
 }
 
 const appointmentSchema = new Schema<IAppointment>({
-  userId: { type: String, required: true },
-  docId: { type: String, required: true },
-  email: { type: String, required: true },
+  // userId: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  docId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
+  email:{type: String},
   slotDate: { type: String, required: true },
   slotTime: { type: String, required: true },
   userData: { type: Object, required: true },
   docData: { type: Object, required: true },
-  amount: { type: Number, required: true },
+  amount: { type: Number},
   date: { type: Number, required: true },
   cancelled: { type: Boolean, default: false },
   payment: { type: Boolean, default: false },

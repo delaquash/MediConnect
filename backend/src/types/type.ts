@@ -22,3 +22,18 @@ export interface PopulatedAppointment {
   cancelled: boolean;
   date: number;
 }
+
+export interface IProfileUpdateData {
+   name: string;
+  address: {
+    line1: string;
+    line2: string;
+  };
+  password?: string;
+  gender?: 'Male' | 'Female' | 'Other' | null;
+  dob: Date | null;
+  phone: string | null;
+  profileComplete: boolean;
+  profileCompletedAt: Date | null;
+  image?: string;
+}
