@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useAppContext, useBookAppointment } from '../context/AppContext'
 import { getUserAppointment } from '../hooks/UserHooks'
+import { assets } from '../assets/assets'
 
 export const Route = createFileRoute('/myappointment')({
   component: RouteComponent,
@@ -44,12 +45,40 @@ if (error) {
               </div>
               <div className='flex-1 text-sm text-[#5E5E5E] m-2'>
                 <p className='text-[#262626] font-medium text-base'>{details?.docData?.name}</p>
-                <p className='pt-4'>{details?.docData?.specialty}</p>
-                <p className='text-[#464646] font-medium mt-1'>Address:</p>
-                {/* <p className=''>{details?.docData?.address.line1}</p> */}
-                {/* <p className=''>{details?.docData?.address.line2}</p> */}
-                <p className=' mt-1'><span className='text-sm text-[#3C3C3C] font-medium'>Date & Time:</span> {details?.slotDate} |  {details?.slotTime}</p>
+                <p className=''>{details?.docData?.specialty}</p>
+                <p className='text-[#464646] font-medium mt-4'>Address:</p>
+                <p className=''>{details?.docData?.address.line1}</p> 
+                 <p className=''>{details?.docData?.address.line2}</p>
+                <p className=' mt-4'><span className='text-sm text-[#3C3C3C] font-medium'>Date & Time:</span> {details?.slotDate} |  {details?.slotTime}</p>
               </div>
+              <div></div>
+              <div className='flex flex-col gap-2 justify-end text-sm text-center'>
+                            {!details?.cancelled && !details?.payment 
+                            // && !details?.isCompleted && payment !== details?._id 
+                            && 
+                              <button 
+                              // onClick={() => setPayment(details?._id)} 
+                              className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Pay Online</button>}
+                            {!details?.cancelled && !details?.payment && !details?.isCompleted 
+                              // && payment === details?._id 
+                            && <button 
+                              // onClick={() => appointmentStripe(details?._id)} 
+                              className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-gray-100 hover:text-white transition-all duration-300 flex details?s-center justify-center'><img className='max-w-20 max-h-5' src={assets.stripe_logo} alt="" /></button>}
+                            {!details?.cancelled && !details?.payment && !details?.isCompleted 
+                              // && payment === details?._id 
+                            && 
+                            <button 
+                            // onClick={() => appointmentRazorpay(details?._id)} 
+                            className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-gray-100 hover:text-white transition-all duration-300 flex details?s-center justify-center'><img className='max-w-20 max-h-5' src={assets.razorpay_logo} alt="" /></button>}
+                            {!details?.cancelled && details?.payment && !details?.isCompleted && <button className='sm:min-w-48 py-2 border rounded text-[#696969]  bg-[#EAEFFF]'>Paid</button>}
+
+                            {details?.isCompleted && <button className='sm:min-w-48 py-2 border border-green-500 rounded text-green-500'>Completed</button>}
+
+                            {!details?.cancelled && !details?.isCompleted && <button 
+                            // onClick={() => cancelAppointment(details?._id)} 
+                            className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-red-600 hover:text-white transition-all duration-300'>Cancel appointment</button>}
+                            {details?.cancelled && !details?.isCompleted && <button className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500'>Appointment cancelled</button>}
+                        </div>
             </div>
           ))}
         </div>
