@@ -40,14 +40,14 @@ if (error) {
               className='grid grid-cols-[1fr_2fr] sm:flex sm:gap-6 py-4 border-b border-[#D1D1D1]'
             >
               <div>
-                <img className='w-36 bg-[#EAEFF]' src={details?.userData?.image} alt=''/>
+                <img className='w-36 bg-[#EAEFF]' src={details?.docData?.image} alt=''/>
               </div>
               <div className='flex-1 text-sm text-[#5E5E5E] m-2'>
-                <p className='text-[#262626] font-medium text-base'>{details?.userData?.name}</p>
-                <p className='pt-4'>{details?.userData?.specialty}</p>
+                <p className='text-[#262626] font-medium text-base'>{details?.docData?.name}</p>
+                <p className='pt-4'>{details?.docData?.specialty}</p>
                 <p className='text-[#464646] font-medium mt-1'>Address:</p>
-                <p className=''>{details?.userData?.address.line1}</p>
-                <p className=''>{details?.userData?.address.line2}</p>
+                {/* <p className=''>{details?.docData?.address.line1}</p> */}
+                {/* <p className=''>{details?.docData?.address.line2}</p> */}
                 <p className=' mt-1'><span className='text-sm text-[#3C3C3C] font-medium'>Date & Time:</span> {details?.slotDate} |  {details?.slotTime}</p>
               </div>
             </div>
