@@ -534,7 +534,9 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
           name: doctor.name,
           specialty: doctor.specialty,
           degree: doctor.degree,
-          fees: doctor.fees
+          fees: doctor.fees,
+          image: doctor.image,
+          address: doctor.address,
         },
         date: Date.now(),
         cancelled: false,
@@ -567,6 +569,8 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
         appointment: {
           appointmentId: newAppointment._id,
           doctorName: doctor.name,
+          image: doctor.image,
+          address: doctor.address,
           speciality: doctor.specialty,
           slotDate,
           slotTime,
