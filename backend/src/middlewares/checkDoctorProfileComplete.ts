@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import DoctorModel from '../model/doctorModel';
+import DoctorModel from '../model/DoctorModel';
 
 export const checkDoctorProfileComplete = async (req: Request, res: Response, next: NextFunction) => {
     try {

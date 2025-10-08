@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { NextFunction, Request, Response } from 'express';
-import AdminModel from '../model/adminModel';
+import AdminModel from '../model/AdminModel';
 import bcrypt from "bcryptjs"
 import dotenv from 'dotenv';
 dotenv.config();

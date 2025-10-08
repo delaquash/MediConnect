@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import DoctorModel from '../model/doctorModel';
+import DoctorModel from '../model/DoctorModel';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import AppointmentModel from '../model/appointmentModel';
+import AppointmentModel from '../model/AppointmentModel';
 import { AuthenticatedDoctorRequest } from '../middlewares/docAuth';
 import { validateProfileData } from '../helper/validateProfileData';
 import cloudinary  from "../config/cloudinary";

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express"; 
 import jwt from "jsonwebtoken"; 
-import AdminModel from "../model/adminModel";
+import AdminModel from "../model/AdminModel";
 
 const authAdmin = async (req: any, res: Response, next: NextFunction) => {
     try {
