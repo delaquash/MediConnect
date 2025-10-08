@@ -42,19 +42,84 @@ export const initializePayment = async (req: Request, res: Response, next: NextF
             return
         }
 
+        // Check if amount is defined
+        if (typeof appointmentDetails.amount !== 'number') {
+            res.status(400).json({
+                success: false,
+                message: "Appointment amount is missing or invalid"
+            });
+            return;
+        }
+
         // paystack function to init payment
         const response = await axios.post(
             "https://api.paystack.co/transaction/initialize",{
                 email: appointmentDetails.userData.email,
-                amount: appointmentDetails.amount* 100,
+                amount: appointmentDetails.amount * 100,
+                reference: `APT_${appointmentId}_${Date.now()}`,
                 currency: "NGN",
+                callback_url: `${process.env.FRONTEND_URL}/verify-payment`,
+                metada: {
+                    appoinmentId: appointmentDetails?.id.toString(),
+                    userId: userId,
+                    doctorName: appointmentDetails.docData.name,
+                    patientName: appointmentDetails.userData.name,
+                    slotDate: appointmentDetails.slotDate,
+                    slotTime: appointmentDetails.slotTime,
+                    custom_fields: [
+                        {
+                            display_name:"Appointment ID",
+                            variable_name: "appointment_id",
+                            value: appointmentDetails.id.toString()
+                        },
+                        {
+                            display_name: "Patient Name",
+                            variable_name: "patient_name",
+                            value: appointmentDetails.userData.name
+                        }
+                    ]
+                }
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY!}`,
+                    "Content0Type": "application/json",
+                    "Cache-Control" : "no-cache"
+                }
             }
 
         )
+        
+   if (response.data.status) {
+      res.status(200).json({
+        success: true,
+        message: "Payment initialized successfully",
+        authorization_url: response.data.data.authorization_url,
+        access_code: response.data.data.access_code,
+        reference: response.data.data.reference
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Failed to initialize payment"
+      });
+    }
+
+  } catch (error: any) {
+    console.error('Paystack initialization error:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      message: error.response?.data?.message || "Payment initialization failed"
+    });
+  }
+};
+
+export const verifyPayment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        
     } catch (error) {
         
     }
 }
-export const verifyPayment = async (req: Request, res: Response, next: NextFunction) => {}
 export const handlePaymentWebhook = async (req: Request, res: Response, next: NextFunction) => {}
 
