@@ -51,16 +51,18 @@ export const initializePayment = async (req: Request, res: Response, next: NextF
             return;
         }
 
+        const reference = `APT_${appointmentId}_${Date.now()}`
+
         // paystack function to init payment
         const response = await axios.post(
             "https://api.paystack.co/transaction/initialize",{
                 email: appointmentDetails.userData.email,
                 amount: appointmentDetails.amount * 100,
-                reference: `APT_${appointmentId}_${Date.now()}`,
                 currency: "NGN",
+                reference: reference,
                 callback_url: `${process.env.FRONTEND_URL}/verify-payment`,
                 metada: {
-                    appoinmentId: appointmentDetails?.id.toString(),
+                    appointmentId: appointmentId,
                     userId: userId,
                     doctorName: appointmentDetails.docData.name,
                     patientName: appointmentDetails.userData.name,
@@ -70,7 +72,7 @@ export const initializePayment = async (req: Request, res: Response, next: NextF
                         {
                             display_name:"Appointment ID",
                             variable_name: "appointment_id",
-                            value: appointmentDetails.id.toString()
+                            value: appointmentId
                         },
                         {
                             display_name: "Patient Name",
@@ -138,7 +140,7 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
                 }
             }
         )
-
+        console.log(resp.data.data, "This is the verification response")
         const paymentData = resp.data.data
         console.log(paymentData, "this is payment data")
 
@@ -150,8 +152,28 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
             return
         }
 
-        const appointmentId = paymentData?.metadata?.appointmentId
-        console.log(appointmentId, "this is appointment id")
+        let appointmentId: string
+
+        if(paymentData.metadata && paymentData.metadata.appointmentId){
+            appointmentId = paymentData.metadata.appointmentId
+            console.log("Appointment ID from metadata:", appointmentId)
+        } else {
+            // extract metadata from reference
+            const refParts = reference.split("_")
+            if(refParts.length >=2){
+                appointmentId = refParts[1]
+                console.log("Appointment ID from reference:", appointmentId)
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: "Invalid payment reference format"
+                })
+                return
+            }
+        }
+
+        console.log("Appointment ID:", appointmentId)
+        
         // verify if appointment belong to user
         const appointment = await AppointmentModel.findById(appointmentId)
         console.log(appointment, "this is appointment")
@@ -168,6 +190,16 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
                 message: "Unauthorized"
             })
             return;
+        }
+
+        // prevent double payment
+        if(appointment.payment && appointment.paymentReference === reference){
+            res.status(200).json({
+                success: true,
+                message:"Payment already verified",
+                appointment
+            })
+            return
         }
 
         const updatedAppointment = await AppointmentModel.findByIdAndUpdate(
@@ -202,7 +234,6 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
     });
   }
 }
-
 
 export const handlePaymentWebhook = async (req: Request, res: Response, next: NextFunction) => {
     try {
