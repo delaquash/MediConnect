@@ -116,10 +116,74 @@ export const initializePayment = async (req: Request, res: Response, next: NextF
 
 export const verifyPayment = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const userId = req.userId;
+        const { reference } = req.body;
+
+        if(!reference){
+            res.status(400).json({
+                success: false,
+                message: "Payment reference is required"
+            })
+            return;
+        }
+
+        // verify payment
+        const resp = await axios.get(
+            `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY!}`,
+                    "Content0Type": "application/json",
+                    "Cache-Control" : "no-cache"
+                }
+            }
+        )
+
+        const paymentData = resp.data.data
+
+        if(!resp.data.status || paymentData.status !== "success"){
+            res.status(400).json({
+                success: false,
+                message: "Payment verification failed"
+            })
+            return
+        }
+
+        // Get appointment ID
+        const updatedAppointment = await AppointmentModel.findByIdAndUpdate(
+            appointmentId, 
+            {
+                payment: true,
+                paymentMethod: "paystack",
+                paymentReference: reference,
+                paidAt: new Date()
+            }
+        )
+
+        if(!updatedAppointment){
+            res.status(404).json({
+                success: false,
+                message:"Appointment not found..."
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Payment verified successfully",
+            appointment: updatedAppointment
+        })
+    } catch (error: any) {
+        console.error("Paystack verification error:", error.response?.data || error.message);
+        res.status(500).json({
+            success: false,
+            message: error.response?.data?.message || "Payment verification failed"
+        })
+    }
+}
+export const handlePaymentWebhook = async (req: Request, res: Response, next: NextFunction) => {
+    try {
         
     } catch (error) {
         
     }
 }
-export const handlePaymentWebhook = async (req: Request, res: Response, next: NextFunction) => {}
 
