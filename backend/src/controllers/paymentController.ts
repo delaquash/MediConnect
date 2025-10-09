@@ -148,7 +148,18 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
             return
         }
 
-        // Get appointment ID
+        const appointmentId = paymentData?.metadata?.appointmentId
+
+        // verify if appointment belong to user
+        const appointment = await AppointmentModel.findById(appointmentId)
+        if(appointment?.userId.toString() !== userId){
+            res.status(403).json({
+                success: false,
+                message: "Unauthorized"
+            })
+            return;
+        }
+
         const updatedAppointment = await AppointmentModel.findByIdAndUpdate(
             appointmentId, 
             {
@@ -156,34 +167,76 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
                 paymentMethod: "paystack",
                 paymentReference: reference,
                 paidAt: new Date()
-            }
+            },
+            { new: true }
         )
 
         if(!updatedAppointment){
-            res.status(404).json({
-                success: false,
-                message:"Appointment not found..."
-            })
+                res.status(404).json({
+                    success: false,
+                    message: "Appointment not found"
+                })
+                return;
         }
 
         res.status(200).json({
             success: true,
             message: "Payment verified successfully",
             appointment: updatedAppointment
-        })
+        })  
     } catch (error: any) {
-        console.error("Paystack verification error:", error.response?.data || error.message);
-        res.status(500).json({
-            success: false,
-            message: error.response?.data?.message || "Payment verification failed"
-        })
-    }
+    console.error('Paystack verification error:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      message: error.response?.data?.message || "Payment verification failed"
+    });
+  }
 }
+
+
 export const handlePaymentWebhook = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        
-    } catch (error) {
-        
-    }
+        const secret = process.env.PAYSTACK_WEBHOOK_SECRET!;
+
+        // validate webhook signature
+        const hash = crypto
+            .createHmac("sha512", secret)
+            .update(JSON.stringify(req.body))
+            .digest("hex")
+
+            if(hash !== req.headers["x-paystack-signature"]) {
+                res.status(400).json({
+                    success: false,
+                    message: "Invalid Signature"
+                })
+                return
+            }
+
+            const event = req.body
+            // handle event that are successfull
+            if (event.event === "charge.success"){
+                const { reference, metadata, status } = event.data
+
+                if(status === "success" && metadata.appointmentId) {
+                        const appointmentId = metadata.appointmentId
+
+                        await AppointmentModel.findByIdAndUpdate(appointmentId, {
+                            payment: true,
+                            paymentMethod: "paystack",
+                            paymentReference: reference,
+                            paidAt: new Date()
+                        })
+                        console.log(`Appointment ${appointmentId} marked as paid.`);
+                    }
+            }
+     res.status(200).json({ success: true });
+
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Webhook processing failed"
+    });
+  }
 }
 
