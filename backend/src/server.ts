@@ -21,7 +21,7 @@ app.use("/admin", adminRouter);
 app.use("/doctor", doctorRouter);
 app.use("/user", userRouter); 
 app.use("/password", passwordRouter);
-app.use('/api/payment', paymentRouter);
+app.use('/payment', paymentRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("API WORKING");

@@ -16,11 +16,12 @@ export interface IAppointment extends Document {
   cancelledBy?: string;
   cancellationReason?: string;
   cancelledAt?: Date;
-
+  paymentMethod?: 'paystack' | 'cash' | null;
+  paymentReference?: string | null;
+  paidAt?: Date | null;
 }
 
 const appointmentSchema = new Schema<IAppointment>({
-  // userId: { type: String, required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   docId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
   email:{type: String},
@@ -33,6 +34,9 @@ const appointmentSchema = new Schema<IAppointment>({
   cancelled: { type: Boolean, default: false },
   payment: { type: Boolean, default: false },
   isCompleted: { type: Boolean, default: false },
+  paymentMethod: { type: String, enum: ['paystack', 'cash'], default: null },
+  paymentReference: { type: String, default: null },
+  paidAt: { type: Date, default: null }
 });
 
 const AppointmentModel: Model<IAppointment> =

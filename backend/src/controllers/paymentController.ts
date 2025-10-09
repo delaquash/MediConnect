@@ -117,6 +117,7 @@ export const initializePayment = async (req: Request, res: Response, next: NextF
 export const verifyPayment = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.userId;
+        console.log(userId, "this is user id from verify payment")
         const { reference } = req.body;
 
         if(!reference){
@@ -139,6 +140,7 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
         )
 
         const paymentData = resp.data.data
+        console.log(paymentData, "this is payment data")
 
         if(!resp.data.status || paymentData.status !== "success"){
             res.status(400).json({
@@ -149,10 +151,18 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
         }
 
         const appointmentId = paymentData?.metadata?.appointmentId
-
+        console.log(appointmentId, "this is appointment id")
         // verify if appointment belong to user
         const appointment = await AppointmentModel.findById(appointmentId)
-        if(appointment?.userId.toString() !== userId){
+        console.log(appointment, "this is appointment")
+        if (!appointment) {
+            res.status(404).json({
+                success: false,
+                message: "Appointment not found"
+        });
+        return;
+        }
+        if(appointment.userId.toString() !== userId){
             res.status(403).json({
                 success: false,
                 message: "Unauthorized"
@@ -196,7 +206,7 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
 
 export const handlePaymentWebhook = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const secret = process.env.PAYSTACK_WEBHOOK_SECRET!;
+        const secret = process.env.PAYSTACK_SECRET_KEY!!;
 
         // validate webhook signature
         const hash = crypto
