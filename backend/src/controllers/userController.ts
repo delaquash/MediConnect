@@ -491,11 +491,11 @@ const bookAppointment = async (req: any, res: Response, next: NextFunction): Pro
 
       // Check if requested time slot is already booked
       if (bookedSlotsForDate.includes(slotTime)) {
-        res.status(409).json({               // 409 Conflict status for booking collision
+        res.status(409).json({              
           success: false,
           message: "This time slot is already booked. Please select another time."
         });
-        return;                              // Cannot double-book same slot
+        return;                              
       }
 
       const existingAppointment = await AppointmentModel.findOne({

@@ -1,10 +1,44 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { useState } from 'react';
+import { useLogin } from '../hooks/UserHooks';
+import { toast } from 'react-toastify';
+
 
 export const Route = createFileRoute('/login')({
   component: Login,
 })
 
 function Login() {
+  // Form state
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  })
+
+
+  const loginMutation = useLogin()
+
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+
+    if (!formData.email || !formData.password) {
+      toast.error('Please fill in all fields')
+      return
+    }
+
+
+    loginMutation.mutate(formData)
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }))
+  }
+
   return (
         <form className='!mx-auto !mb-[90px] !mt-[40px] !shadow-lg !w-[450px] !h- !bg-white !rounded-[20px] !border !border-[#D4D4D4] !p-8'>
           <div className="!ml-[4px] !flex !flex-col !items-start !gap-2">

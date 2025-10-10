@@ -15,6 +15,8 @@ import info_icon from './info_icon.svg'
 import upload_icon from './upload_icon.png'
 import stripe_logo from './stripe_logo.png'
 import razorpay_logo from './razorpay_logo.png'
+import doc_image from './doc-image.png'
+import about_us from "./About_US.png";
 import doc1 from './doc1.png'
 import doc2 from './doc2.png'
 import doc3 from './doc3.png'
@@ -55,7 +57,9 @@ export const assets = {
     dropdown_icon,
     upload_icon,
     stripe_logo,
-    razorpay_logo
+    razorpay_logo,
+    doc_image,
+    about_us
 }
 
 export const specialityData = [
@@ -95,6 +99,7 @@ export const doctors = [
         experience: '4 Years',
         about: 'Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies. Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies.',
         fees: 50,
+        available: true,
         address: {
             line1: '17th Cross, Richmond',
             line2: 'Circle, Ring Road, London'
@@ -106,6 +111,7 @@ export const doctors = [
         image: doc2,
         speciality: 'Gynecologist',
         degree: 'MBBS',
+        available: false,
         experience: '3 Years',
         about: 'Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies. Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies.',
         fees: 60,
@@ -120,6 +126,7 @@ export const doctors = [
         image: doc3,
         speciality: 'Dermatologist',
         degree: 'MBBS',
+        available: false,
         experience: '1 Years',
         about: 'Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies. Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies.',
         fees: 30,
@@ -134,6 +141,7 @@ export const doctors = [
         image: doc4,
         speciality: 'Pediatricians',
         degree: 'MBBS',
+        available: true,
         experience: '2 Years',
         about: 'Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies. Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies.',
         fees: 40,
@@ -148,6 +156,7 @@ export const doctors = [
         image: doc5,
         speciality: 'Neurologist',
         degree: 'MBBS',
+        available: true,
         experience: '4 Years',
         about: 'Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies. Dr. Davis has a strong commitment to delivering comprehensive medical care, focusing on preventive medicine, early diagnosis, and effective treatment strategies.',
         fees: 50,
@@ -160,6 +169,7 @@ export const doctors = [
         _id: 'doc6',
         name: 'Dr. Andrew Williams',
         image: doc6,
+        available: true,
         speciality: 'Neurologist',
         degree: 'MBBS',
         experience: '4 Years',
@@ -174,6 +184,7 @@ export const doctors = [
         _id: 'doc7',
         name: 'Dr. Christopher Davis',
         image: doc7,
+        available: true,
         speciality: 'General physician',
         degree: 'MBBS',
         experience: '4 Years',
@@ -188,6 +199,7 @@ export const doctors = [
         _id: 'doc8',
         name: 'Dr. Timothy White',
         image: doc8,
+        available: false,
         speciality: 'Gynecologist',
         degree: 'MBBS',
         experience: '3 Years',
@@ -202,6 +214,7 @@ export const doctors = [
         _id: 'doc9',
         name: 'Dr. Ava Mitchell',
         image: doc9,
+        available: true,
         speciality: 'Dermatologist',
         degree: 'MBBS',
         experience: '1 Years',
@@ -216,6 +229,7 @@ export const doctors = [
         _id: 'doc10',
         name: 'Dr. Jeffrey King',
         image: doc10,
+        available: false,
         speciality: 'Pediatricians',
         degree: 'MBBS',
         experience: '2 Years',
@@ -297,3 +311,5 @@ export const doctors = [
         }
     },
 ]
+
+export { appointment_img }
