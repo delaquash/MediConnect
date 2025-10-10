@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
-import UserModel, { IUser } from '../model/userModel';
+import UserModel, { IUser } from '../model/UserModel';
 import mongoose from 'mongoose';
 import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
-import DoctorModel from '../model/doctorModel';
-import AppointmentModel from '../model/appointmentModel';
+import DoctorModel from '../model/DoctorModel';
+import AppointmentModel from '../model/AppointmentModel';
 import { generateTimeSlots, isValidTimeSlot } from '../utils/timeSlot';
 import { isValidAppointmentDate } from '../utils/appointmentDate';
 import { AuthenticatedRequest } from '../types/global';
@@ -207,7 +207,7 @@ const verifyUserOTP = async (req: Request, res: Response, next: NextFunction): P
     });
 
   } catch (error) {
-    console.error('❌ OTP verification error:', error);
+    console.error(' OTP verification error:', error);
     next(error);
   }
 };

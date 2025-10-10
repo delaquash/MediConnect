@@ -1,13 +1,13 @@
 import mongoose from 'mongoose';
 import { NextFunction, Request, Response } from 'express';
-import DoctorModel from '../model/doctorModel';
+import DoctorModel from '../model/DoctorModel';
 import validator from 'validator';
 import jwt from 'jsonwebtoken';
-import AppointmentModel from '../model/appointmentModel';
-import UserModel from '../model/userModel';
+import AppointmentModel from '../model/AppointmentModel';
+import UserModel from '../model/UserModel';
 import { createOTp } from '../utils/token';
 import EmailService from '../services/emailService';
-import AdminModel from '../model/adminModel';
+import AdminModel from '../model/AdminModel';
 import { v2 as cloudinary } from 'cloudinary';
 
 

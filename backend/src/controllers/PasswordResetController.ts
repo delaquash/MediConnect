@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import validator from 'validator';
-import UserModel from '../model/userModel';
-import DoctorModel from '../model/doctorModel'
+import UserModel from '../model/UserModel';
+import DoctorModel from '../model/DoctorModel'
 import { createOTp, createSecureToken, hashValue } from '../utils/token';
 import EmailService from '../services/emailService';
 

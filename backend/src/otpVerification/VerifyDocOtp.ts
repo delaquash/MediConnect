@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { hashValue } from '../utils/token'; 
 import EmailService from '../services/emailService'; 
-import DoctorModel from '../model/doctorModel';
+import DoctorModel from '../model/DoctorModel';
 
 export const verifyDoctorOTP = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

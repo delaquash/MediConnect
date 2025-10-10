@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { hashValue } from '../utils/token'; // Assuming you have a utility function to hash values
 import EmailService from '../services/emailService'; // Adjust the import path as needed
-import UserModel from "../model/userModel";
+import UserModel from "../model/UserModel";
 
 export const verifyUserOTP = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

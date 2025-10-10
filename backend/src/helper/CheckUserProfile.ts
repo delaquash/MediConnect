@@ -1,4 +1,4 @@
-import { IUser } from "../model/userModel";
+import { IUser } from "../model/UserModel";
 
 export function checkUserProfileCompletion(user: IUser): { isComplete: boolean; missingFields: string[] } {
   const requiredFields = [
