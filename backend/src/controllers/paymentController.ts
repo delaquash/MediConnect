@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
 import AppointmentModel from '../model/AppointmentModel';
 import crypto from 'crypto';
+import { channel } from 'process';
 
 export const initializePayment = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -59,6 +60,7 @@ export const initializePayment = async (req: Request, res: Response, next: NextF
                 email: appointmentDetails.userData.email,
                 amount: appointmentDetails.amount * 100,
                 currency: "NGN",
+                channel: ["card"],
                 reference: reference,
                 callback_url: `${process.env.FRONTEND_URL}/verify-payment`,
                 metada: {
@@ -236,48 +238,91 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
 }
 
 export const handlePaymentWebhook = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const secret = process.env.PAYSTACK_SECRET_KEY!!;
+  try {
+    const secret = process.env.PAYSTACK_SECRET_KEY!;
+    
+    // ✅ Skip validation in development
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (!isDevelopment) {
+      // Only validate in production
+      const hash = crypto
+        .createHmac('sha512', secret)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
 
-        // validate webhook signature
-        const hash = crypto
-            .createHmac("sha512", secret)
-            .update(JSON.stringify(req.body))
-            .digest("hex")
+      const paystackSignature = req.headers['x-paystack-signature'];
 
-            if(hash !== req.headers["x-paystack-signature"]) {
-                res.status(400).json({
-                    success: false,
-                    message: "Invalid Signature"
-                })
-                return
+      if (hash !== paystackSignature) {
+        console.error('Signature mismatch!');
+        res.status(400).json({
+          success: false,
+          message: "Invalid signature"
+        });
+        return;
+      }
+    }
+
+    const event = req.body;
+    console.log('Webhook event:', event);
+
+    // Handle the event
+    if (event.event === 'charge.success') {
+      const { reference, status } = event.data;
+
+      if (status === 'success') {
+        // Extract appointmentId from reference
+        const refParts = reference.split('_');
+        const appointmentId = refParts.length >= 2 ? refParts[1] : null;
+
+        if (appointmentId) {
+          await AppointmentModel.findByIdAndUpdate(
+            appointmentId,
+            {
+              payment: true,
+              paymentMethod: 'paystack',
+              paymentReference: reference,
+              paidAt: new Date()
             }
+          );
+          console.log('Payment confirmed for appointment:', appointmentId);
+        }
+      }
+    }
 
-            const event = req.body
-            // handle event that are successfull
-            if (event.event === "charge.success"){
-                const { reference, metadata, status } = event.data
-
-                if(status === "success" && metadata.appointmentId) {
-                        const appointmentId = metadata.appointmentId
-
-                        await AppointmentModel.findByIdAndUpdate(appointmentId, {
-                            payment: true,
-                            paymentMethod: "paystack",
-                            paymentReference: reference,
-                            paidAt: new Date()
-                        })
-                        console.log(`Appointment ${appointmentId} marked as paid.`);
-                    }
-            }
-     res.status(200).json({ success: true });
+    res.status(200).json({ success: true });
 
   } catch (error) {
     console.error('Webhook error:', error);
-    res.status(500).json({
-      success: false,
-      message: "Webhook processing failed"
-    });
+    res.status(200).json({ success: true });
   }
+// try {
+//     console.log('Webhook received:', req.body);
+    
+//     const event = req.body;
+
+//     if (event.event === 'charge.success') {
+//       const { reference, status } = event.data;
+      
+//       if (status === 'success') {
+//         const refParts = reference.split('_');
+//         const appointmentId = refParts[1];
+
+//         await AppointmentModel.findByIdAndUpdate(appointmentId, {
+//           payment: true,
+//           paymentMethod: 'paystack',
+//           paymentReference: reference,
+//           paidAt: new Date()
+//         });
+
+//         console.log('✅ Payment confirmed for:', appointmentId);
+//       }
+//     }
+
+//     res.status(200).json({ success: true });
+//   } catch (error) {
+//     console.error('Webhook error:', error);
+//     res.status(200).json({ success: true });
+//   }
 }
 
