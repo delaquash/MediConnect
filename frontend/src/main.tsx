@@ -7,7 +7,6 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import AppContextProvider from "./context/AppContext"
 import './index.css';
 
-import './App.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -19,7 +18,7 @@ const queryClient = new QueryClient({
         }
         return failureCount < 3;
       },
-      staleTime: 1 * 60 * 1000, // 1 minute default
+      staleTime: 1 * 60 * 1000, 
     },
     mutations: {
       retry: 1,
