@@ -42,7 +42,7 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
         }
 
         // Find doctor by email
-        const doctor = await DoctorModel.findOne({ email }).select("+password");
+        const doctor = await DoctorModel.findOne({ email }).select("-password");
 
         if (!doctor) {
             res.status(401).json({ 

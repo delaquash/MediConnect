@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
 import AppointmentModel from '../model/AppointmentModel';
 import crypto from 'crypto';
-import { channel } from 'process';
 
 export const initializePayment = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -121,7 +120,6 @@ export const initializePayment = async (req: Request, res: Response, next: NextF
 export const verifyPayment = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.userId;
-        console.log(userId, "this is user id from verify payment")
         const { reference } = req.body;
 
         if(!reference){
@@ -142,9 +140,8 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
                 }
             }
         )
-        console.log(resp.data.data, "This is the verification response")
+
         const paymentData = resp.data.data
-        console.log(paymentData, "this is payment data")
 
         if(!resp.data.status || paymentData.status !== "success"){
             res.status(400).json({
@@ -158,13 +155,11 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
 
         if(paymentData.metadata && paymentData.metadata.appointmentId){
             appointmentId = paymentData.metadata.appointmentId
-            console.log("Appointment ID from metadata:", appointmentId)
         } else {
             // extract metadata from reference
             const refParts = reference.split("_")
             if(refParts.length >=2){
                 appointmentId = refParts[1]
-                console.log("Appointment ID from reference:", appointmentId)
             } else {
                 res.status(400).json({
                     success: false,
@@ -173,12 +168,10 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
                 return
             }
         }
-
-        console.log("Appointment ID:", appointmentId)
         
         // verify if appointment belong to user
         const appointment = await AppointmentModel.findById(appointmentId)
-        console.log(appointment, "this is appointment")
+      
         if (!appointment) {
             res.status(404).json({
                 success: false,
@@ -241,7 +234,6 @@ export const handlePaymentWebhook = async (req: Request, res: Response, next: Ne
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY!;
     
-    // ✅ Skip validation in development
     const isDevelopment = process.env.NODE_ENV === 'development';
     
     if (!isDevelopment) {
@@ -264,7 +256,6 @@ export const handlePaymentWebhook = async (req: Request, res: Response, next: Ne
     }
 
     const event = req.body;
-    console.log('Webhook event:', event);
 
     // Handle the event
     if (event.event === 'charge.success') {
@@ -285,7 +276,6 @@ export const handlePaymentWebhook = async (req: Request, res: Response, next: Ne
               paidAt: new Date()
             }
           );
-          console.log('Payment confirmed for appointment:', appointmentId);
         }
       }
     }
@@ -322,7 +312,6 @@ export const handlePaymentWebhook = async (req: Request, res: Response, next: Ne
 //     res.status(200).json({ success: true });
 //   } catch (error) {
 //     console.error('Webhook error:', error);
-//     res.status(200).json({ success: true });
-//   }
+//     res.status(200).jso console.log(appointment, "this is appointment")
 }
 
