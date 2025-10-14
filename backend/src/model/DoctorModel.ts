@@ -68,7 +68,8 @@ const doctorSchema = new Schema<IDoctor>(
     password: { 
     type: String, 
     required: [true, "Password is required." ],
-    minlength: [8, "Password must be at least 8 characters long"]
+    minlength: [8, "Password must be at least 8 characters long"],
+    select: false,
   },
     image: { type: String  },
     specialty: { type: String },
@@ -165,9 +166,16 @@ const doctorSchema = new Schema<IDoctor>(
     default: null
   }
   },
-  { minimize: false, // Prevents mongoose from removing empty objects
-    timestamps: true   // Automatically adds createdAt and updatedAt fields
-  }, 
+ {
+  minimize: false, 
+  timestamps: true,
+  toJSON: { 
+    transform: function(doc, ret) {
+      const { password, ...rest } = ret; // ✅ Destructure instead
+      return rest;
+    }
+  }
+} 
 );
 
 

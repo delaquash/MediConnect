@@ -41,8 +41,7 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
             return;
         }
 
-        // Find doctor by email
-        const doctor = await DoctorModel.findOne({ email }).select("-password");
+        const doctor = await DoctorModel.findOne({ email }).select("+password");
 
         if (!doctor) {
             res.status(401).json({ 
@@ -52,7 +51,6 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
             return;
         }
 
-        // ✅ Use the comparePassword method from your model
         const isPasswordValid = await doctor.comparePassword(password);
         
         if (!isPasswordValid) {
@@ -68,15 +66,15 @@ const loginDoctor = async (req: Request, res: Response, next: NextFunction): Pro
             expiresIn: "30d" 
         });
 
-        // Don't send password in response
-        const doctorResponse = doctor.toObject();
-        // delete doctorResponse?.password;
+
+        const doctorData = await DoctorModel.findById(doctor._id);
+   
 
         res.status(200).json({
             success: true,
             message: "Login successful",
             token,
-            doctor: doctorResponse
+            doctor: doctorData
         });
 
     } catch (error) {
