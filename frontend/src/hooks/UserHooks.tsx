@@ -71,6 +71,19 @@ export const useUserProfile = (): UseQueryResult<UserData, Error> => {
 };
 
 
+export const getDoctors = (): UseQueryResult<any, Error> => {
+  const { backendUrl } = useAppContext()
+
+  return useQuery<any, Error>({
+    queryKey: ["doctors"],
+    queryFn: () => {
+      return api.getDoctors(backendUrl);
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  })
+}
+
 
 // update profile hook
 export const updateUserProfile = () => {

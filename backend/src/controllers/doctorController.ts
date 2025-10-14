@@ -8,18 +8,18 @@ import { validateProfileData } from '../helper/validateProfileData';
 import cloudinary  from "../config/cloudinary";
 
 
-const doctorList = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const doctors = await DoctorModel.find({}).select(["-password", "-email"]).sort({ date: -1 });
-        res.status(200).json({
-            success: true,
-            message: "Doctors retrieved successfully",
-            data: doctors
-        });
-    } catch (error) {
-        next(error);
-    }
-}
+// controller
+const getAllDoctors = async (req: Request, res: Response) => {
+  const doctors = await DoctorModel.find({}, 
+    'name image specialty degree experience about fees available address slots_booked'
+  );
+
+  res.status(200).json({
+    success: true,
+    doctors,
+  });
+};
+
 
 const loginDoctor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -725,7 +725,7 @@ const completeDoctorProfile = async (req: Request, res: Response, next: NextFunc
 }
 
 export {
-    doctorList,
+    getAllDoctors,
     loginDoctor,
     getDoctorAppointments,
     doctorCancelAppointment,

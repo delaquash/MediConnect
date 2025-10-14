@@ -4,7 +4,7 @@ import {
   appointmentComplete,
   doctorCancelAppointment,
   getDoctorAppointments,
-  doctorList,
+  getAllDoctors,
   doctorsDashboard,
   getDoctorProfile,
   updateDoctorProfile,
@@ -18,7 +18,7 @@ import upload from "../middlewares/multer";
 
 const doctorRouter = express.Router();
 
-doctorRouter.get("/list", authDoctor, doctorList);
+doctorRouter.get("/list", getAllDoctors);
 doctorRouter.post("/verify-otp", verifyDoctorOTP)
 doctorRouter.post("/login", loginDoctor);
 doctorRouter.get("/appointments", authDoctor, checkDoctorProfileComplete, getDoctorAppointments);
