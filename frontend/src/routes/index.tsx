@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { assets, doctors, specialityData } from '../assets/assets';
 import Footer from '../components/Footer';
+import { useAppContext } from '../context/AppContext';
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
 function Home({ docId }: any) {
   const navigate = useNavigate()
+  const { } = useAppContext()
   return (
     <>
      
